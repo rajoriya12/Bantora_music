@@ -1,0 +1,27 @@
+{
+  "name": "spotfy",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [
+    "music",
+    "songs"
+  ],
+  "homepage": "https://github.com/rajoriya12/bantora#readme",
+  "bugs": {
+    "url": "https://github.com/rajoriya12/bantora/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rajoriya12/bantora.git"
+  },
+  "license": "ISC",
+  "author": "roopkishor",
+  "type": "commonjs",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^2.0.0"
+  }
+}
