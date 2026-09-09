@@ -1,0 +1,11 @@
+{"timestamp":"00:00:01.042","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:44.309","source":"Server","level":"LOG","message":"○ Compiling / ..."}
+{"timestamp":"00:00:45.578","source":"Browser","level":"INFO","message":"Download the React DevTools for a better development experience: https://react.dev/link/react-devtools"}
+{"timestamp":"00:00:54.286","source":"Browser","level":"ERROR","message":"Playback prevented: AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22 (src/app/page.tsx:130:54)"}
+{"timestamp":"00:00:54.287","source":"Server","level":"ERROR","message":"[browser] \"Playback prevented:\" \"AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22\" \"(src/app/page.tsx:130:54)\""}
+{"timestamp":"00:00:54.770","source":"Browser","level":"ERROR","message":"Playback prevented: AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22 (src/app/page.tsx:130:54)"}
+{"timestamp":"00:00:54.770","source":"Server","level":"ERROR","message":"[browser] \"Playback prevented:\" \"AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22\" \"(src/app/page.tsx:130:54)\""}
+{"timestamp":"00:00:55.531","source":"Browser","level":"ERROR","message":"Playback prevented: AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22 (src/app/page.tsx:130:54)"}
+{"timestamp":"00:00:55.532","source":"Server","level":"ERROR","message":"[browser] \"Playback prevented:\" \"AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22\" \"(src/app/page.tsx:130:54)\""}
+{"timestamp":"00:04:13.151","source":"Server","level":"LOG","message":"✓ Compiled in 112ms"}
+{"timestamp":"00:04:49.155","source":"Server","level":"LOG","message":"✓ Compiled in 99ms"}

@@ -6,30 +6,51 @@
 }
 
 :root {
-  --background: #121212;
+  --background: #000000;
   --foreground: #ffffff;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Hide scrollbars for the immersive feel */
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar for inner elements only */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 0px;
+  background: transparent; /* make scrollbar invisible */
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+@keyframes sway {
+  0% { transform: scale(1.5) translate(0, 0); }
+  25% { transform: scale(1.55) translate(-2%, 2%); }
+  50% { transform: scale(1.5) translate(2%, -2%); }
+  75% { transform: scale(1.55) translate(-2%, -2%); }
+  100% { transform: scale(1.5) translate(0, 0); }
 }
 
-::-webkit-scrollbar-thumb {
-  background: #3f3f46; /* zinc-700 */
-  border-radius: 5px;
+.animate-sway {
+  animation: sway 30s ease-in-out infinite alternate;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #52525b; /* zinc-600 */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
 }
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+}
+
