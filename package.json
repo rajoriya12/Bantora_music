@@ -22,6 +22,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@vercel/speed-insights": "^2.0.0",
     "express": "^5.2.1"
   }
 }
