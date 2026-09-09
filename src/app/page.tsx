@@ -234,7 +234,7 @@ export default function MusicPlayer() {
               />
               <div 
                 className="absolute top-0 left-0 h-full bg-white rounded-full transition-all duration-100 ease-out" 
-                style={{ width: \`\${progressPercent}%\` }}
+                style={{ width: `${progressPercent}%` }}
               />
             </div>
             <span className="text-[10px] font-mono text-white/50">{formatTime(duration)}</span>
@@ -261,7 +261,7 @@ export default function MusicPlayer() {
       </div>
 
       {/* 4. The Hidden Dimension Library (Overlay) */}
-      <div className={\`absolute inset-0 z-50 transition-all duration-700 ease-in-out \${showLibrary ? "opacity-100 backdrop-blur-3xl bg-black/60" : "opacity-0 pointer-events-none"}\`}>
+      <div className={`absolute inset-0 z-50 transition-all duration-700 ease-in-out ${showLibrary ? "opacity-100 backdrop-blur-3xl bg-black/60" : "opacity-0 pointer-events-none"}`}>
         <div className="absolute top-8 right-8">
           <button 
             onClick={() => setShowLibrary(false)}
@@ -286,19 +286,19 @@ export default function MusicPlayer() {
                       setCurrentFolder(folder);
                       setIsPlaying(true);
                     }}
-                    className={\`group flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all \${isActive ? 'bg-white text-black' : 'hover:bg-white/10'}\`}
+                    className={`group flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all ${isActive ? 'bg-white text-black' : 'hover:bg-white/10'}`}
                   >
                     <img 
-                      src={\`/songs/\${folder}/cover.jpeg\`} 
+                      src={`/songs/${folder}/cover.jpeg`} 
                       onError={(e) => { e.currentTarget.src = "/logo.png" }}
                       className="w-16 h-16 rounded-xl object-cover shadow-lg group-hover:scale-105 transition-transform" 
                       alt="" 
                     />
                     <div>
-                      <h3 className={\`font-bold text-lg \${isActive ? 'text-black' : 'text-white'}\`}>
+                      <h3 className={`font-bold text-lg ${isActive ? 'text-black' : 'text-white'}`}>
                         {folderInfo[folder] || folder}
                       </h3>
-                      <p className={\`text-sm \${isActive ? 'text-black/60' : 'text-white/40'}\`}>Playlist</p>
+                      <p className={`text-sm ${isActive ? 'text-black/60' : 'text-white/40'}`}>Playlist</p>
                     </div>
                   </div>
                 );
@@ -331,13 +331,13 @@ export default function MusicPlayer() {
                       setIsPlaying(true);
                       setShowLibrary(false); // Auto close library when track selected
                     }}
-                    className={\`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-colors \${isActive ? 'bg-white/20 backdrop-blur-md border border-white/10' : 'hover:bg-white/5'}\`}
+                    className={`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-colors ${isActive ? 'bg-white/20 backdrop-blur-md border border-white/10' : 'hover:bg-white/5'}`}
                   >
                     <div className="flex items-center gap-4 truncate">
-                      <span className={\`text-sm font-mono \${isActive ? 'text-white' : 'text-white/30'}\`}>
+                      <span className={`text-sm font-mono ${isActive ? 'text-white' : 'text-white/30'}`}>
                         {String(originalIndex + 1).padStart(2, '0')}
                       </span>
-                      <span className={\`truncate text-lg font-medium \${isActive ? 'text-white' : 'text-white/70'}\`}>
+                      <span className={`truncate text-lg font-medium ${isActive ? 'text-white' : 'text-white/70'}`}>
                         {cleanSongName(song)}
                       </span>
                     </div>
