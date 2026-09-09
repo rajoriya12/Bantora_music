@@ -271,12 +271,12 @@ export default function MusicPlayer() {
           </button>
         </div>
 
-        <div className="w-full h-full flex flex-col md:flex-row p-8 pt-24 gap-12 max-w-7xl mx-auto">
+        <div className="w-full h-full flex flex-col md:flex-row p-6 pt-20 md:p-8 md:pt-24 gap-6 md:gap-12 max-w-7xl mx-auto">
           
           {/* Folders/Playlists (Left) */}
-          <div className="md:w-1/3 flex flex-col gap-6">
-            <h2 className="text-3xl font-black tracking-tight">Your Dimensions</h2>
-            <div className="space-y-4">
+          <div className="md:w-1/3 flex flex-col gap-4 md:gap-6 shrink-0">
+            <h2 className="text-2xl md:text-3xl font-black tracking-tight">Your Dimensions</h2>
+            <div className="flex overflow-x-auto md:flex-col gap-4 pb-4 md:pb-0 snap-x hide-scrollbar">
               {folders.map(folder => {
                 const isActive = folder === currentFolder;
                 return (
@@ -286,7 +286,7 @@ export default function MusicPlayer() {
                       setCurrentFolder(folder);
                       setIsPlaying(true);
                     }}
-                    className={`group flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all ${isActive ? 'bg-white text-black' : 'hover:bg-white/10'}`}
+                    className={`group flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl cursor-pointer transition-all snap-start shrink-0 w-[200px] md:w-auto ${isActive ? 'bg-white text-black' : 'hover:bg-white/10'}`}
                   >
                     <img 
                       src={`/songs/${folder}/cover.jpeg`} 
@@ -295,10 +295,10 @@ export default function MusicPlayer() {
                       alt="" 
                     />
                     <div>
-                      <h3 className={`font-bold text-lg ${isActive ? 'text-black' : 'text-white'}`}>
+                      <h3 className={`font-bold text-base md:text-lg ${isActive ? 'text-black' : 'text-white'}`}>
                         {folderInfo[folder] || folder}
                       </h3>
-                      <p className={`text-sm ${isActive ? 'text-black/60' : 'text-white/40'}`}>Playlist</p>
+                      <p className={`text-xs md:text-sm ${isActive ? 'text-black/60' : 'text-white/40'}`}>Playlist</p>
                     </div>
                   </div>
                 );
@@ -307,8 +307,8 @@ export default function MusicPlayer() {
           </div>
 
           {/* Current Playlist Tracks (Right) */}
-          <div className="md:w-2/3 flex flex-col h-full overflow-hidden">
-            <div className="flex items-center gap-4 bg-white/5 p-4 rounded-full border border-white/10 mb-8 backdrop-blur-md">
+          <div className="md:w-2/3 flex flex-col h-full overflow-hidden flex-1">
+            <div className="flex items-center gap-3 md:gap-4 bg-white/5 p-3 md:p-4 rounded-full border border-white/10 mb-4 md:mb-8 backdrop-blur-md shrink-0">
               <Search className="w-5 h-5 text-white/50 ml-2" />
               <input 
                 type="text" 
@@ -319,7 +319,7 @@ export default function MusicPlayer() {
               />
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-2 pr-4 pb-24">
+            <div className="flex-1 overflow-y-auto space-y-2 pr-2 md:pr-4 pb-32 md:pb-24 hide-scrollbar">
               {filteredSongs.map((song, idx) => {
                 const originalIndex = songs.indexOf(song);
                 const isActive = originalIndex === currentSongIndex;
