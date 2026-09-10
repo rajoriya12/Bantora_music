@@ -30,9 +30,9 @@ function formatTime(seconds: number) {
 }
 
 export default function MusicPlayer() {
-  const folders: Folder[] = ["lofisongs", "playlist", "seedhemuat"];
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [folderInfo, setFolderInfo] = useState<Record<string, string>>({});
-  const [currentFolder, setCurrentFolder] = useState<string>("playlist");
+  const [currentFolder, setCurrentFolder] = useState<string>("");
   const [songs, setSongs] = useState<Song[]>([]);
   const [currentSongIndex, setCurrentSongIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -71,8 +71,29 @@ export default function MusicPlayer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch Folder Metadata
+  // Fetch initial folders
   useEffect(() => {
+    async function fetchFolders() {
+      try {
+        const res = await fetch('/api/admin/folders');
+        if (res.ok) {
+          const data = await res.json();
+          setFolders(data.folders);
+          // Set default folder if none selected and currentFolder is empty
+          if (!currentFolder && data.folders.length > 0) {
+            setCurrentFolder(data.folders[0]);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load folders', e);
+      }
+    }
+    fetchFolders();
+  }, []);
+
+  // Fetch Folder Metadata after folders are loaded
+  useEffect(() => {
+    if (folders.length === 0) return;
     async function fetchMetadata() {
       const info: Record<string, string> = {};
       for (const folder of folders) {
@@ -91,11 +112,12 @@ export default function MusicPlayer() {
       setFolderInfo(info);
     }
     fetchMetadata();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [folders]);
 
   // Load Playlist when folder changes
   useEffect(() => {
+    if (!currentFolder) return;
     async function loadPlaylist() {
       try {
         const res = await fetch(`/songs/${currentFolder}/playlist.json`);
@@ -116,7 +138,7 @@ export default function MusicPlayer() {
 
   // Update Audio Source when Song changes
   useEffect(() => {
-    if (songs.length > 0 && audioRef.current) {
+    if (songs.length > 0 && audioRef.current && currentFolder) {
       let trackPath = songs[currentSongIndex];
       if (trackPath.startsWith("/")) trackPath = trackPath.substring(1);
       
@@ -169,7 +191,7 @@ export default function MusicPlayer() {
   );
 
   const currentTrackName = songs.length > 0 ? cleanSongName(songs[currentSongIndex]) : "Select a track";
-  const currentCover = `/songs/${currentFolder}/cover.jpeg`;
+  const currentCover = currentFolder ? `/songs/${currentFolder}/cover.jpeg` : "/logo.png";
 
   // Calculate progress for circular ring
   const progressPercent = duration ? (currentTime / duration) * 100 : 0;
