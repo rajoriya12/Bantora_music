@@ -21,9 +21,10 @@ import {
   ListMusic,
   Layers,
   AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────────────
 
 interface FolderStat {
   name: string;
@@ -31,301 +32,190 @@ interface FolderStat {
   songCount: number;
   sizeMB: number;
 }
-
 interface Stats {
   folders: number;
   songs: number;
   totalSizeMB: number;
   folderStats: FolderStat[];
 }
-
 interface FolderInfo {
   title: string;
   description: string;
 }
-
 type Tab = "dashboard" | "playlists" | "songs";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function cleanSongName(track: string) {
   let name = track.split("/").pop() || track;
-  name = decodeURIComponent(name);
-  name = name.replace(/\.mp3$/i, "");
+  name = decodeURIComponent(name).replace(/\.mp3$/i, "");
   name = name
     .replace(/\(pagalworldi\.com\.co\)/gi, "")
     .replace(/\(koshalworld\.com\)/gi, "")
     .replace(/\(mp3\.pm\)/gi, "")
     .replace(/HindiRapsong2021/gi, "");
-  name = name.replace(/[-_]/g, " ").trim();
-  return name || track;
+  return name.replace(/[-_]/g, " ").trim() || track;
 }
 
-function Toast({
-  message,
-  type,
-  onClose,
-}: {
-  message: string;
-  type: "success" | "error";
-  onClose: () => void;
-}) {
+// ── Toast ─────────────────────────────────────────────────────────────────────
+
+function Toast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
   useEffect(() => {
     const t = setTimeout(onClose, 3500);
     return () => clearTimeout(t);
   }, [onClose]);
-
   return (
-    <div
-      className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border text-sm font-medium transition-all animate-slide-up ${
-        type === "success"
-          ? "bg-emerald-950 border-emerald-500/40 text-emerald-300"
-          : "bg-red-950 border-red-500/40 text-red-300"
-      }`}
-    >
-      {type === "success" ? (
-        <Check className="w-4 h-4 shrink-0" />
-      ) : (
-        <AlertTriangle className="w-4 h-4 shrink-0" />
-      )}
+    <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border text-sm font-medium animate-slide-up
+      ${type === "success"
+        ? "bg-emerald-950/90 border-emerald-500/30 text-emerald-300 shadow-emerald-900/40"
+        : "bg-red-950/90 border-red-500/30 text-red-300 shadow-red-900/40"}`}>
+      {type === "success"
+        ? <Check className="w-4 h-4 shrink-0" />
+        : <AlertTriangle className="w-4 h-4 shrink-0" />}
       {message}
-      <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100">
-        <X className="w-4 h-4" />
-      </button>
+      <button onClick={onClose} className="ml-1 opacity-50 hover:opacity-100 transition-opacity"><X className="w-3.5 h-3.5" /></button>
     </div>
   );
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
+// ── Stat Card ─────────────────────────────────────────────────────────────────
 
-function StatCard({
-  label,
-  value,
-  sub,
-  icon: Icon,
-  accent,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  icon: React.ElementType;
-  accent: string;
+function StatCard({ label, value, sub, icon: Icon, gradient }: {
+  label: string; value: string | number; sub?: string;
+  icon: React.ElementType; gradient: string;
 }) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col gap-4">
-      <div
-        className={`w-10 h-10 rounded-xl flex items-center justify-center ${accent}`}
-      >
-        <Icon className="w-5 h-5" />
+    <div className="relative overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03] p-5 flex flex-col gap-4 group hover:border-white/15 transition-all hover:-translate-y-0.5">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${gradient} shadow-lg`}>
+        <Icon className="w-5 h-5 text-white" />
       </div>
       <div>
         <p className="text-3xl font-black tracking-tight">{value}</p>
-        <p className="text-white/50 text-sm mt-1">{label}</p>
-        {sub && <p className="text-white/30 text-xs mt-0.5">{sub}</p>}
+        <p className="text-white/45 text-sm mt-1">{label}</p>
+        {sub && <p className="text-white/25 text-xs mt-0.5">{sub}</p>}
       </div>
+      {/* Subtle shimmer on hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
     </div>
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function AdminPanel() {
-  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
+  const [activeTab, setActiveTab]   = useState<Tab>("dashboard");
+  const [toast, setToast]           = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // Dashboard
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats]           = useState<Stats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
 
-  // Playlists tab
-  const [folders, setFolders] = useState<string[]>([]);
+  const [folders, setFolders]       = useState<string[]>([]);
   const [folderInfoMap, setFolderInfoMap] = useState<Record<string, FolderInfo>>({});
   const [selectedFolder, setSelectedFolder] = useState<string>("");
-  const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderName, setNewFolderName]   = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null);
 
-  // Edit playlist modal
-  const [editingFolder, setEditingFolder] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-  const [editCoverFile, setEditCoverFile] = useState<File | null>(null);
+  const [editingFolder, setEditingFolder]   = useState<string | null>(null);
+  const [editTitle, setEditTitle]           = useState("");
+  const [editDesc, setEditDesc]             = useState("");
+  const [editCoverFile, setEditCoverFile]   = useState<File | null>(null);
   const [editCoverPreview, setEditCoverPreview] = useState<string>("");
-  const [savingEdit, setSavingEdit] = useState(false);
+  const [savingEdit, setSavingEdit]         = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
-  // Songs tab
-  const [songs, setSongs] = useState<string[]>([]);
+  const [songs, setSongs]           = useState<string[]>([]);
   const [loadingSongs, setLoadingSongs] = useState(false);
-  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [renamingIdx, setRenamingIdx] = useState<number | null>(null);
-  const [renameValue, setRenameValue] = useState("");
+  const [isUploading, setIsUploading]   = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
+  const [renamingIdx, setRenamingIdx]   = useState<number | null>(null);
+  const [renameValue, setRenameValue]   = useState("");
   const [savingRename, setSavingRename] = useState(false);
-  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx]   = useState<number | null>(null);
   const dragItemIdx = useRef<number | null>(null);
-  const songUploadRef = useRef<HTMLInputElement>(null);
+  const songUploadRef  = useRef<HTMLInputElement>(null);
   const multiUploadRef = useRef<HTMLInputElement>(null);
 
-  // ── toast helpers ──────────────────────────────────────────────────────────
+  const notify = useCallback((message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+  }, []);
 
-  const notify = useCallback(
-    (message: string, type: "success" | "error" = "success") => {
-      setToast({ message, type });
-    },
-    []
-  );
-
-  // ── Stats ──────────────────────────────────────────────────────────────────
+  // ── Fetch ─────────────────────────────────────────────────────────────────
 
   const fetchStats = useCallback(async () => {
     setLoadingStats(true);
     try {
-      const res = await fetch("/api/admin/stats");
-      if (res.ok) setStats(await res.json());
-    } catch {
-      // non-fatal
-    } finally {
-      setLoadingStats(false);
-    }
+      const r = await fetch("/api/admin/stats");
+      if (r.ok) setStats(await r.json());
+    } catch { /**/ } finally { setLoadingStats(false); }
   }, []);
-
-  // ── Folders ────────────────────────────────────────────────────────────────
 
   const fetchFolders = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/folders");
-      if (!res.ok) return;
-      const data = await res.json();
-      const list: string[] = data.folders || [];
+      const r = await fetch("/api/admin/folders");
+      if (!r.ok) return;
+      const { folders: list = [] }: { folders: string[] } = await r.json();
       setFolders(list);
       if (!selectedFolder && list.length > 0) setSelectedFolder(list[0]);
-
-      // Fetch info.json for each folder
       const infoMap: Record<string, FolderInfo> = {};
-      await Promise.all(
-        list.map(async (folder) => {
-          try {
-            const r = await fetch(
-              `/songs/${folder}/info.json?t=${Date.now()}`
-            );
-            if (r.ok) {
-              const d = await r.json();
-              infoMap[folder] = {
-                title: d.title || d.tital || folder,
-                description: d.description || d.des || "",
-              };
-            } else {
-              infoMap[folder] = { title: folder, description: "" };
-            }
-          } catch {
-            infoMap[folder] = { title: folder, description: "" };
-          }
-        })
-      );
+      await Promise.all(list.map(async (f) => {
+        try {
+          const ir = await fetch(`/songs/${f}/info.json?t=${Date.now()}`);
+          const d  = ir.ok ? await ir.json() : {};
+          infoMap[f] = { title: d.title || d.tital || f, description: d.description || d.des || "" };
+        } catch { infoMap[f] = { title: f, description: "" }; }
+      }));
       setFolderInfoMap(infoMap);
-    } catch {
-      // non-fatal
-    }
+    } catch { /**/ }
   }, [selectedFolder]);
-
-  // ── Songs ──────────────────────────────────────────────────────────────────
 
   const fetchSongs = useCallback(async (folder: string) => {
     if (!folder) return;
     setLoadingSongs(true);
     try {
-      const res = await fetch(
-        `/songs/${folder}/playlist.json?t=${Date.now()}`
-      );
-      if (res.ok) setSongs(await res.json());
-      else setSongs([]);
-    } catch {
-      setSongs([]);
-    } finally {
-      setLoadingSongs(false);
-    }
+      const r = await fetch(`/songs/${folder}/playlist.json?t=${Date.now()}`);
+      setSongs(r.ok ? await r.json() : []);
+    } catch { setSongs([]); }
+    finally { setLoadingSongs(false); }
   }, []);
 
-  // ── Effects ────────────────────────────────────────────────────────────────
+  useEffect(() => { fetchStats(); fetchFolders(); }, []);
+  useEffect(() => { if (selectedFolder) fetchSongs(selectedFolder); }, [selectedFolder]);
 
-  useEffect(() => {
-    fetchStats();
-    fetchFolders();
-  }, []);
-
-  useEffect(() => {
-    if (selectedFolder) fetchSongs(selectedFolder);
-  }, [selectedFolder]);
-
-  // ── Folder: Create ─────────────────────────────────────────────────────────
+  // ── Folder CRUD ───────────────────────────────────────────────────────────
 
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFolderName.trim()) return;
     setCreatingFolder(true);
     try {
-      const res = await fetch("/api/admin/folders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const r = await fetch("/api/admin/folders", {
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folderName: newFolderName.trim() }),
       });
-      const data = await res.json();
-      if (data.success) {
-        setNewFolderName("");
-        await fetchFolders();
-        setSelectedFolder(data.folder);
-        fetchStats();
-        notify(`Playlist "${data.folder}" created`);
-      } else {
-        notify(data.error || "Failed to create playlist", "error");
-      }
-    } catch {
-      notify("Network error", "error");
-    } finally {
-      setCreatingFolder(false);
-    }
+      const d = await r.json();
+      if (d.success) { setNewFolderName(""); await fetchFolders(); setSelectedFolder(d.folder); fetchStats(); notify(`Playlist "${d.folder}" created`); }
+      else notify(d.error || "Failed to create playlist", "error");
+    } catch { notify("Network error", "error"); }
+    finally { setCreatingFolder(false); }
   };
-
-  // ── Folder: Delete ─────────────────────────────────────────────────────────
 
   const handleDeleteFolder = async (folder: string) => {
-    if (
-      !confirm(
-        `Delete playlist "${folderInfoMap[folder]?.title || folder}" and ALL its songs? This cannot be undone.`
-      )
-    )
-      return;
+    if (!confirm(`Delete "${folderInfoMap[folder]?.title || folder}" and ALL its songs? This cannot be undone.`)) return;
     setDeletingFolder(folder);
     try {
-      const res = await fetch("/api/admin/folders/delete", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+      const r = await fetch("/api/admin/folders/delete", {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folder }),
       });
-      const data = await res.json();
-      if (data.success) {
-        if (selectedFolder === folder) {
-          const remaining = folders.filter((f) => f !== folder);
-          setSelectedFolder(remaining[0] || "");
-        }
-        await fetchFolders();
-        fetchStats();
-        notify(`Playlist deleted`);
-      } else {
-        notify(data.error || "Failed to delete", "error");
-      }
-    } catch {
-      notify("Network error", "error");
-    } finally {
-      setDeletingFolder(null);
-    }
+      const d = await r.json();
+      if (d.success) {
+        if (selectedFolder === folder) { const rem = folders.filter(f => f !== folder); setSelectedFolder(rem[0] || ""); }
+        await fetchFolders(); fetchStats(); notify("Playlist deleted");
+      } else notify(d.error || "Failed to delete", "error");
+    } catch { notify("Network error", "error"); }
+    finally { setDeletingFolder(null); }
   };
-
-  // ── Folder: Edit (open modal) ──────────────────────────────────────────────
 
   const openEditModal = (folder: string) => {
     setEditingFolder(folder);
@@ -333,13 +223,6 @@ export default function AdminPanel() {
     setEditDesc(folderInfoMap[folder]?.description || "");
     setEditCoverFile(null);
     setEditCoverPreview(`/songs/${folder}/cover.jpeg?t=${Date.now()}`);
-  };
-
-  const handleCoverPick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setEditCoverFile(file);
-    setEditCoverPreview(URL.createObjectURL(file));
   };
 
   const handleSaveEdit = async () => {
@@ -351,212 +234,145 @@ export default function AdminPanel() {
       fd.append("title", editTitle);
       fd.append("description", editDesc);
       if (editCoverFile) fd.append("cover", editCoverFile);
-
-      const res = await fetch("/api/admin/folders/update", {
-        method: "POST",
-        body: fd,
-      });
-      const data = await res.json();
-      if (data.success) {
-        await fetchFolders();
-        setEditingFolder(null);
-        notify("Playlist updated");
-      } else {
-        notify(data.error || "Failed to save", "error");
-      }
-    } catch {
-      notify("Network error", "error");
-    } finally {
-      setSavingEdit(false);
-    }
+      const r = await fetch("/api/admin/folders/update", { method: "POST", body: fd });
+      const d = await r.json();
+      if (d.success) { await fetchFolders(); setEditingFolder(null); notify("Playlist updated"); }
+      else notify(d.error || "Failed to save", "error");
+    } catch { notify("Network error", "error"); }
+    finally { setSavingEdit(false); }
   };
 
-  // ── Song: Upload (single or multiple) ─────────────────────────────────────
+  // ── Song upload ───────────────────────────────────────────────────────────
 
   const uploadFiles = async (files: FileList) => {
-    if (!selectedFolder || files.length === 0) return;
+    if (!selectedFolder || !files.length) return;
     setIsUploading(true);
-    let successCount = 0;
+    setUploadProgress({ done: 0, total: files.length });
+    let ok = 0;
     for (let i = 0; i < files.length; i++) {
-      setUploadingIdx(i);
-      const file = files[i];
       const fd = new FormData();
       fd.append("folder", selectedFolder);
-      fd.append("file", file);
+      fd.append("file", files[i]);
       try {
-        const res = await fetch("/api/admin/songs", { method: "POST", body: fd });
-        const data = await res.json();
-        if (data.success) successCount++;
-      } catch {
-        // continue uploading rest
-      }
+        const r = await fetch("/api/admin/songs", { method: "POST", body: fd });
+        if ((await r.json()).success) ok++;
+      } catch { /**/ }
+      setUploadProgress({ done: i + 1, total: files.length });
     }
-    setUploadingIdx(null);
     setIsUploading(false);
-    if (songUploadRef.current) songUploadRef.current.value = "";
+    setUploadProgress(null);
+    if (songUploadRef.current)  songUploadRef.current.value  = "";
     if (multiUploadRef.current) multiUploadRef.current.value = "";
     await fetchSongs(selectedFolder);
     fetchStats();
-    notify(
-      successCount === files.length
-        ? `${successCount} song${successCount > 1 ? "s" : ""} uploaded`
-        : `${successCount}/${files.length} uploaded (some failed)`,
-      successCount > 0 ? "success" : "error"
-    );
+    notify(ok === files.length ? `${ok} song${ok > 1 ? "s" : ""} uploaded` : `${ok}/${files.length} uploaded`, ok > 0 ? "success" : "error");
   };
 
-  const handleUploadChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) uploadFiles(e.target.files);
-  };
-
-  // Drag & drop onto the songs area
   const handleDropZone = (e: React.DragEvent) => {
     e.preventDefault();
-    const files = e.dataTransfer.files;
-    const mp3s = Array.from(files).filter((f) =>
-      f.type.includes("audio")
-    );
-    if (mp3s.length === 0) return;
+    const mp3s = Array.from(e.dataTransfer.files).filter(f => f.type.includes("audio"));
+    if (!mp3s.length) return;
     const dt = new DataTransfer();
-    mp3s.forEach((f) => dt.items.add(f));
+    mp3s.forEach(f => dt.items.add(f));
     uploadFiles(dt.files);
   };
 
-  // ── Song: Delete ───────────────────────────────────────────────────────────
+  // ── Song CRUD ─────────────────────────────────────────────────────────────
 
   const handleDeleteSong = async (filename: string) => {
     if (!confirm(`Delete "${cleanSongName(filename)}"?`)) return;
     try {
-      const res = await fetch("/api/admin/songs/delete", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+      const r = await fetch("/api/admin/songs/delete", {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folder: selectedFolder, filename }),
       });
-      const data = await res.json();
-      if (data.success) {
-        await fetchSongs(selectedFolder);
-        fetchStats();
-        notify("Song deleted");
-      } else {
-        notify(data.error || "Failed to delete", "error");
-      }
-    } catch {
-      notify("Network error", "error");
-    }
+      const d = await r.json();
+      if (d.success) { await fetchSongs(selectedFolder); fetchStats(); notify("Song deleted"); }
+      else notify(d.error || "Failed to delete", "error");
+    } catch { notify("Network error", "error"); }
   };
 
-  // ── Song: Rename ───────────────────────────────────────────────────────────
-
   const startRename = (idx: number) => {
-    const raw = songs[idx];
+    const raw  = songs[idx];
     const base = raw.startsWith("/") ? raw.substring(1) : raw;
     setRenamingIdx(idx);
     setRenameValue(base.replace(/\.mp3$/i, ""));
   };
 
   const commitRename = async (idx: number) => {
-    if (!renameValue.trim()) {
-      setRenamingIdx(null);
-      return;
-    }
-    const raw = songs[idx];
-    const oldFilename = raw.startsWith("/") ? raw.substring(1) : raw;
-    const newFilename = renameValue.trim().replace(/\.mp3$/i, "") + ".mp3";
-    if (newFilename === oldFilename) {
-      setRenamingIdx(null);
-      return;
-    }
+    if (!renameValue.trim()) { setRenamingIdx(null); return; }
+    const raw  = songs[idx];
+    const old  = raw.startsWith("/") ? raw.substring(1) : raw;
+    const next = renameValue.trim().replace(/\.mp3$/i, "") + ".mp3";
+    if (next === old) { setRenamingIdx(null); return; }
     setSavingRename(true);
     try {
-      const res = await fetch("/api/admin/songs/rename", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folder: selectedFolder, oldFilename, newFilename }),
+      const r = await fetch("/api/admin/songs/rename", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder: selectedFolder, oldFilename: old, newFilename: next }),
       });
-      const data = await res.json();
-      if (data.success) {
-        await fetchSongs(selectedFolder);
-        notify("Song renamed");
-      } else {
-        notify(data.error || "Failed to rename", "error");
-      }
-    } catch {
-      notify("Network error", "error");
-    } finally {
-      setSavingRename(false);
-      setRenamingIdx(null);
+      const d = await r.json();
+      if (d.success) { await fetchSongs(selectedFolder); notify("Song renamed"); }
+      else notify(d.error || "Failed to rename", "error");
+    } catch { notify("Network error", "error"); }
+    finally { setSavingRename(false); setRenamingIdx(null); }
+  };
+
+  const handleDragStart = (idx: number) => { dragItemIdx.current = idx; };
+  const handleDragEnter = (idx: number) => { setDragOverIdx(idx); };
+  const handleDragEnd   = async () => {
+    if (dragItemIdx.current === null || dragOverIdx === null || dragItemIdx.current === dragOverIdx) {
+      dragItemIdx.current = null; setDragOverIdx(null); return;
     }
-  };
-
-  // ── Song: Drag to reorder ──────────────────────────────────────────────────
-
-  const handleDragStart = (idx: number) => {
-    dragItemIdx.current = idx;
-  };
-
-  const handleDragEnter = (idx: number) => {
-    setDragOverIdx(idx);
-  };
-
-  const handleDragEnd = async () => {
-    if (
-      dragItemIdx.current === null ||
-      dragOverIdx === null ||
-      dragItemIdx.current === dragOverIdx
-    ) {
-      dragItemIdx.current = null;
-      setDragOverIdx(null);
-      return;
-    }
-    const reordered = [...songs];
-    const [moved] = reordered.splice(dragItemIdx.current, 1);
-    reordered.splice(dragOverIdx, 0, moved);
-    setSongs(reordered);
-    dragItemIdx.current = null;
-    setDragOverIdx(null);
+    const list = [...songs];
+    const [moved] = list.splice(dragItemIdx.current, 1);
+    list.splice(dragOverIdx, 0, moved);
+    setSongs(list);
+    dragItemIdx.current = null; setDragOverIdx(null);
     try {
       await fetch("/api/admin/songs/reorder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folder: selectedFolder, songs: reordered }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder: selectedFolder, songs: list }),
       });
       notify("Order saved");
-    } catch {
-      notify("Failed to save order", "error");
-      fetchSongs(selectedFolder);
-    }
+    } catch { notify("Failed to save order", "error"); fetchSongs(selectedFolder); }
   };
 
-  // ── Sidebar nav items ──────────────────────────────────────────────────────
+  // ── Nav items ──────────────────────────────────────────────────────────────
 
   const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "playlists", label: "Playlists", icon: FolderOpen },
-    { id: "songs", label: "Songs", icon: Music2 },
+    { id: "playlists", label: "Playlists",  icon: FolderOpen },
+    { id: "songs",     label: "Songs",      icon: Music2 },
   ];
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col md:flex-row selection:bg-white/20">
-      {/* ── Global CSS injected via style tag ─────────────────────────────── */}
+    <div className="min-h-screen bg-[#070709] text-white flex flex-col md:flex-row selection:bg-purple-500/20">
       <style>{`
-        @keyframes slide-up {
-          from { opacity: 0; transform: translateY(12px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .animate-slide-up { animation: slide-up 0.25s ease-out; }
-        .drag-over { outline: 2px dashed rgba(255,255,255,0.3); outline-offset: -2px; background: rgba(255,255,255,0.05); }
+        @keyframes slide-up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16,1,0.3,1); }
+        .drag-over { outline:2px dashed rgba(168,85,247,0.5); outline-offset:-2px; background:rgba(168,85,247,0.06); }
+        .tab-active { background:rgba(168,85,247,0.15); border-color:rgba(168,85,247,0.3); color:#fff; }
       `}</style>
 
-      {/* ── Sidebar ───────────────────────────────────────────────────────── */}
-      <aside className="w-full md:w-64 shrink-0 bg-black/60 border-b md:border-b-0 md:border-r border-white/10 flex md:flex-col px-4 py-4 md:py-8 gap-2 md:gap-1 overflow-x-auto md:overflow-visible">
+      {/* ── Ambient background ─────────────────────────────────────────── */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-purple-800/10 blur-[100px]" />
+        <div className="absolute -bottom-40 -right-40 w-80 h-80 rounded-full bg-indigo-800/10 blur-[100px]" />
+      </div>
+
+      {/* ── Sidebar ────────────────────────────────────────────────────── */}
+      <aside className="relative z-10 w-full md:w-60 shrink-0 border-b md:border-b-0 md:border-r border-white/[0.06] flex md:flex-col px-4 py-4 md:py-6 gap-1 overflow-x-auto md:overflow-visible bg-[#070709]/80 backdrop-blur-xl">
         {/* Logo */}
         <div className="hidden md:flex items-center gap-3 px-3 mb-8">
-          <img src="/logo.png" alt="Bantora" className="w-8 h-8 rounded-lg" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-900/50">
+            <Sparkles className="w-4 h-4 text-white" />
+          </div>
           <div>
-            <p className="font-black text-lg tracking-tight">Bantora</p>
-            <p className="text-white/40 text-xs">Admin Panel</p>
+            <p className="font-black text-base tracking-tight">Bantora</p>
+            <p className="text-white/35 text-[11px]">Admin</p>
           </div>
         </div>
 
@@ -564,246 +380,168 @@ export default function AdminPanel() {
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap shrink-0 ${
-              activeTab === id
-                ? "bg-white text-black"
-                : "text-white/60 hover:text-white hover:bg-white/10"
-            }`}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap shrink-0 border
+              ${activeTab === id
+                ? "tab-active"
+                : "border-transparent text-white/45 hover:text-white hover:bg-white/6"}`}
           >
             <Icon className="w-4 h-4 shrink-0" />
             {label}
           </button>
         ))}
 
-        {/* Back to player — at bottom on desktop */}
         <div className="hidden md:block mt-auto">
-          <Link
-            href="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/40 hover:text-white hover:bg-white/10 transition-all"
-          >
+          <Link href="/" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/30 hover:text-white hover:bg-white/6 border border-transparent transition-all">
             <ArrowLeft className="w-4 h-4 shrink-0" />
             Back to Player
           </Link>
         </div>
       </aside>
 
-      {/* ── Main content ──────────────────────────────────────────────────── */}
-      <main className="flex-1 min-h-screen overflow-y-auto p-6 md:p-10">
+      {/* ── Main ───────────────────────────────────────────────────────── */}
+      <main className="relative z-10 flex-1 min-h-screen overflow-y-auto p-6 md:p-10">
 
-        {/* ── DASHBOARD TAB ─────────────────────────────────────────────── */}
+        {/* ──────────────── DASHBOARD ──────────────── */}
         {activeTab === "dashboard" && (
-          <div className="max-w-5xl mx-auto space-y-10">
+          <div className="max-w-5xl mx-auto space-y-10 animate-slide-up">
             <div>
               <h1 className="text-3xl font-black tracking-tight">Dashboard</h1>
-              <p className="text-white/40 mt-1 text-sm">Overview of your Bantora music library</p>
+              <p className="text-white/35 text-sm mt-1">Your Bantora library at a glance</p>
             </div>
 
             {loadingStats ? (
-              <div className="flex items-center gap-3 text-white/40">
-                <Loader2 className="w-5 h-5 animate-spin" /> Loading stats…
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-32 rounded-2xl shimmer" />
+                ))}
               </div>
             ) : stats ? (
               <>
-                {/* Stat cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard
-                    label="Total Playlists"
-                    value={stats.folders}
-                    icon={Layers}
-                    accent="bg-violet-500/20 text-violet-300"
-                  />
-                  <StatCard
-                    label="Total Songs"
-                    value={stats.songs}
-                    icon={ListMusic}
-                    accent="bg-blue-500/20 text-blue-300"
-                  />
-                  <StatCard
-                    label="Storage Used"
-                    value={`${stats.totalSizeMB} MB`}
-                    icon={HardDrive}
-                    accent="bg-amber-500/20 text-amber-300"
-                  />
-                  <StatCard
-                    label="Avg. per Playlist"
-                    value={
-                      stats.folders > 0
-                        ? Math.round(stats.songs / stats.folders)
-                        : 0
-                    }
-                    sub="songs"
-                    icon={Music2}
-                    accent="bg-emerald-500/20 text-emerald-300"
-                  />
+                  <StatCard label="Playlists"        value={stats.folders}       icon={Layers}    gradient="from-violet-500 to-purple-700" />
+                  <StatCard label="Total Songs"      value={stats.songs}         icon={ListMusic} gradient="from-indigo-500 to-blue-700" />
+                  <StatCard label="Storage Used"     value={`${stats.totalSizeMB} MB`} icon={HardDrive} gradient="from-amber-500 to-orange-600" />
+                  <StatCard label="Avg per Playlist" value={stats.folders > 0 ? Math.round(stats.songs / stats.folders) : 0} sub="songs" icon={Music2} gradient="from-emerald-500 to-teal-700" />
                 </div>
 
-                {/* Per-playlist breakdown */}
                 <div>
-                  <h2 className="text-lg font-bold mb-4">Playlists Breakdown</h2>
-                  <div className="space-y-3">
-                    {stats.folderStats.map((fs) => (
-                      <div
-                        key={fs.name}
-                        className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/8 transition-colors"
-                      >
+                  <h2 className="text-base font-bold mb-4 text-white/70">Playlists Breakdown</h2>
+                  <div className="space-y-2">
+                    {stats.folderStats.map(fs => (
+                      <div key={fs.name} className="flex items-center gap-4 bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 hover:border-white/12 hover:bg-white/[0.05] transition-all group">
                         <img
                           src={`/songs/${fs.name}/cover.jpeg`}
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src =
-                              "/logo.png";
-                          }}
-                          className="w-12 h-12 rounded-xl object-cover shrink-0"
+                          onError={e => { (e.currentTarget as HTMLImageElement).src = "/logo.png"; }}
+                          className="w-11 h-11 rounded-xl object-cover shrink-0 ring-1 ring-white/10"
                           alt=""
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold truncate">{fs.title}</p>
-                          <p className="text-white/40 text-xs font-mono">{fs.name}</p>
+                          <p className="font-semibold text-sm truncate">{fs.title}</p>
+                          <p className="text-white/30 text-xs font-mono">{fs.name}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="font-bold">{fs.songCount}</p>
-                          <p className="text-white/40 text-xs">songs</p>
+                          <p className="font-bold text-sm">{fs.songCount}</p>
+                          <p className="text-white/30 text-xs">songs</p>
                         </div>
                         <div className="text-right shrink-0 hidden sm:block">
-                          <p className="font-bold">{fs.sizeMB} MB</p>
-                          <p className="text-white/40 text-xs">size</p>
+                          <p className="font-bold text-sm">{fs.sizeMB} MB</p>
+                          <p className="text-white/30 text-xs">size</p>
                         </div>
                         <button
-                          onClick={() => {
-                            setSelectedFolder(fs.name);
-                            setActiveTab("songs");
-                          }}
-                          className="p-2 rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all"
-                          title="Manage songs"
+                          onClick={() => { setSelectedFolder(fs.name); setActiveTab("songs"); }}
+                          className="p-2 rounded-xl text-white/25 hover:text-white hover:bg-white/8 transition-all opacity-0 group-hover:opacity-100"
                         >
                           <ChevronRight className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
-                    {stats.folderStats.length === 0 && (
-                      <p className="text-white/30 text-sm">
-                        No playlists yet. Create one in the Playlists tab.
-                      </p>
+                    {!stats.folderStats.length && (
+                      <p className="text-white/25 text-sm">No playlists yet.</p>
                     )}
                   </div>
                 </div>
               </>
             ) : (
-              <p className="text-white/30">Could not load stats.</p>
+              <p className="text-white/25">Could not load stats.</p>
             )}
           </div>
         )}
 
-        {/* ── PLAYLISTS TAB ─────────────────────────────────────────────── */}
+        {/* ──────────────── PLAYLISTS ──────────────── */}
         {activeTab === "playlists" && (
-          <div className="max-w-4xl mx-auto space-y-8">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h1 className="text-3xl font-black tracking-tight">Playlists</h1>
-                <p className="text-white/40 mt-1 text-sm">Create, edit, and delete your playlists</p>
-              </div>
+          <div className="max-w-4xl mx-auto space-y-8 animate-slide-up">
+            <div>
+              <h1 className="text-3xl font-black tracking-tight">Playlists</h1>
+              <p className="text-white/35 text-sm mt-1">Create, edit, and delete your playlists</p>
             </div>
 
-            {/* Create new playlist */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-              <h2 className="font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-widest text-white/50">
-                <Plus className="w-4 h-4" /> New Playlist
-              </h2>
+            {/* Create */}
+            <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-6">
+              <p className="text-[11px] font-bold tracking-[0.25em] uppercase text-white/35 mb-4 flex items-center gap-2">
+                <Plus className="w-3.5 h-3.5" /> New Playlist
+              </p>
               <form onSubmit={handleCreateFolder} className="flex gap-3">
                 <input
                   type="text"
-                  placeholder="Playlist name (e.g. chill-vibes)"
+                  placeholder="e.g. chill-vibes"
                   value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  className="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-white/30 text-sm placeholder:text-white/20"
+                  onChange={e => setNewFolderName(e.target.value)}
+                  className="flex-1 bg-black/40 border border-white/8 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500/50 placeholder:text-white/20 transition-colors"
                 />
                 <button
                   type="submit"
                   disabled={creatingFolder || !newFolderName.trim()}
-                  className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl font-bold text-sm hover:scale-105 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100"
+                  className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-3 rounded-xl text-sm font-bold hover:opacity-90 hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100 shadow-lg shadow-purple-900/40"
                 >
-                  {creatingFolder ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Plus className="w-4 h-4" />
-                  )}
+                  {creatingFolder ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   Create
                 </button>
               </form>
-              <p className="text-white/30 text-xs mt-2">
-                Letters, numbers, hyphens and underscores only. Spaces are removed automatically.
-              </p>
+              <p className="text-white/20 text-xs mt-2">Lowercase letters, numbers, hyphens, underscores only.</p>
             </div>
 
-            {/* Existing playlists grid */}
+            {/* Grid */}
             <div>
-              <h2 className="font-bold mb-4 text-sm uppercase tracking-widest text-white/50">
+              <p className="text-[11px] font-bold tracking-[0.25em] uppercase text-white/35 mb-4">
                 {folders.length} Playlist{folders.length !== 1 ? "s" : ""}
-              </h2>
+              </p>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {folders.map((folder) => (
-                  <div
-                    key={folder}
-                    className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all group"
-                  >
+                {folders.map(folder => (
+                  <div key={folder} className="group relative bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden hover:border-white/15 transition-all hover:-translate-y-0.5">
                     {/* Cover */}
-                    <div className="relative aspect-square bg-white/5">
+                    <div className="relative aspect-square bg-black/20">
                       <img
                         src={`/songs/${folder}/cover.jpeg?t=${Date.now()}`}
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = "/logo.png";
-                        }}
-                        className="w-full h-full object-cover"
+                        onError={e => { (e.currentTarget as HTMLImageElement).src = "/logo.png"; }}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         alt=""
                       />
-                      {/* Overlay on hover */}
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                        <button
-                          onClick={() => openEditModal(folder)}
-                          className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all"
-                          title="Edit"
-                        >
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
+                        <button onClick={() => openEditModal(folder)} className="w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur flex items-center justify-center transition-all hover:scale-110" title="Edit">
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => {
-                            setSelectedFolder(folder);
-                            setActiveTab("songs");
-                          }}
-                          className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all"
-                          title="Manage songs"
-                        >
+                        <button onClick={() => { setSelectedFolder(folder); setActiveTab("songs"); }} className="w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur flex items-center justify-center transition-all hover:scale-110" title="Songs">
                           <Music2 className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => handleDeleteFolder(folder)}
-                          disabled={deletingFolder === folder}
-                          className="w-10 h-10 rounded-full bg-red-500/30 hover:bg-red-500/50 flex items-center justify-center transition-all"
-                          title="Delete playlist"
-                        >
-                          {deletingFolder === folder ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4 text-red-300" />
-                          )}
+                        <button onClick={() => handleDeleteFolder(folder)} disabled={deletingFolder === folder} className="w-10 h-10 rounded-full bg-red-500/25 hover:bg-red-500/40 backdrop-blur flex items-center justify-center transition-all hover:scale-110" title="Delete">
+                          {deletingFolder === folder ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 text-red-300" />}
                         </button>
                       </div>
                     </div>
                     {/* Info */}
                     <div className="p-4">
-                      <p className="font-bold truncate">
-                        {folderInfoMap[folder]?.title || folder}
-                      </p>
-                      <p className="text-white/40 text-xs font-mono mt-0.5">{folder}</p>
+                      <p className="font-bold truncate text-sm">{folderInfoMap[folder]?.title || folder}</p>
+                      <p className="text-white/30 text-xs font-mono mt-0.5">{folder}</p>
                       {folderInfoMap[folder]?.description && (
-                        <p className="text-white/50 text-xs mt-1 line-clamp-2">
-                          {folderInfoMap[folder].description}
-                        </p>
+                        <p className="text-white/40 text-xs mt-1.5 line-clamp-2">{folderInfoMap[folder].description}</p>
                       )}
                     </div>
                   </div>
                 ))}
-                {folders.length === 0 && (
-                  <div className="col-span-full text-center text-white/30 py-16 border border-white/10 border-dashed rounded-2xl">
+                {!folders.length && (
+                  <div className="col-span-full text-center text-white/20 py-16 border border-white/6 border-dashed rounded-2xl">
                     No playlists yet. Create one above.
                   </div>
                 )}
@@ -812,116 +550,98 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* ── SONGS TAB ─────────────────────────────────────────────────── */}
+        {/* ──────────────── SONGS ──────────────── */}
         {activeTab === "songs" && (
-          <div className="max-w-5xl mx-auto space-y-6">
+          <div className="max-w-5xl mx-auto space-y-6 animate-slide-up">
             <div>
               <h1 className="text-3xl font-black tracking-tight">Songs</h1>
-              <p className="text-white/40 mt-1 text-sm">
-                Upload, rename, reorder, and delete songs within a playlist
-              </p>
+              <p className="text-white/35 text-sm mt-1">Upload, rename, reorder, and delete songs</p>
             </div>
 
-            {/* Playlist selector */}
+            {/* Playlist chips */}
             <div className="flex flex-wrap gap-2">
-              {folders.map((folder) => (
+              {folders.map(f => (
                 <button
-                  key={folder}
-                  onClick={() => setSelectedFolder(folder)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    selectedFolder === folder
-                      ? "bg-white text-black"
-                      : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white"
-                  }`}
+                  key={f}
+                  onClick={() => setSelectedFolder(f)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all border
+                    ${selectedFolder === f
+                      ? "bg-purple-500/20 border-purple-500/40 text-white shadow-lg shadow-purple-900/30"
+                      : "border-white/8 text-white/45 hover:text-white hover:border-white/20 hover:bg-white/5"}`}
                 >
-                  {folderInfoMap[folder]?.title || folder}
+                  {folderInfoMap[f]?.title || f}
                 </button>
               ))}
             </div>
 
             {selectedFolder ? (
               <>
-                {/* Upload zone */}
+                {/* Drop zone */}
                 <div
-                  onDragOver={(e) => e.preventDefault()}
+                  onDragOver={e => e.preventDefault()}
                   onDrop={handleDropZone}
-                  className="border-2 border-dashed border-white/15 hover:border-white/30 rounded-2xl p-8 text-center transition-colors"
+                  className="border-2 border-dashed border-white/10 hover:border-purple-500/40 rounded-2xl p-8 text-center transition-all hover:bg-purple-500/[0.03] group"
                 >
-                  <Upload className="w-8 h-8 mx-auto text-white/30 mb-3" />
-                  <p className="text-white/50 text-sm mb-3">
-                    Drag & drop MP3 files here, or click to browse
-                  </p>
-                  <div className="flex items-center justify-center gap-3 flex-wrap">
-                    <input
-                      type="file"
-                      accept="audio/mp3,audio/mpeg"
-                      onChange={handleUploadChange}
-                      ref={songUploadRef}
-                      className="hidden"
-                      id="single-upload"
-                    />
-                    <label
-                      htmlFor="single-upload"
-                      className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold cursor-pointer hover:scale-105 transition-transform"
-                    >
-                      {isUploading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Upload className="w-4 h-4" />
+                  {isUploading ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                      <p className="text-white/50 text-sm">
+                        Uploading {uploadProgress?.done}/{uploadProgress?.total}…
+                      </p>
+                      {uploadProgress && (
+                        <div className="w-48 h-1.5 bg-white/8 rounded-full overflow-hidden">
+                          <div
+                            className="h-full progress-bar rounded-full transition-all duration-300"
+                            style={{ width: `${(uploadProgress.done / uploadProgress.total) * 100}%` }}
+                          />
+                        </div>
                       )}
-                      {isUploading ? `Uploading…` : "Upload MP3"}
-                    </label>
-                    <input
-                      type="file"
-                      accept="audio/mp3,audio/mpeg"
-                      multiple
-                      onChange={handleUploadChange}
-                      ref={multiUploadRef}
-                      className="hidden"
-                      id="multi-upload"
-                    />
-                    <label
-                      htmlFor="multi-upload"
-                      className="flex items-center gap-2 bg-white/10 text-white px-5 py-2.5 rounded-full text-sm font-medium cursor-pointer hover:bg-white/20 transition-all"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Upload Multiple
-                    </label>
-                  </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 mx-auto text-white/25 group-hover:text-purple-400 mb-3 transition-colors" />
+                      <p className="text-white/40 text-sm mb-4">Drag & drop MP3 files, or click to browse</p>
+                      <div className="flex items-center justify-center gap-3 flex-wrap">
+                        <input type="file" accept="audio/mp3,audio/mpeg" onChange={e => e.target.files && uploadFiles(e.target.files)} ref={songUploadRef} className="hidden" id="single-upload" />
+                        <label htmlFor="single-upload" className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 px-5 py-2.5 rounded-full text-sm font-bold cursor-pointer hover:opacity-90 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-purple-900/30">
+                          <Upload className="w-4 h-4" /> Upload MP3
+                        </label>
+                        <input type="file" accept="audio/mp3,audio/mpeg" multiple onChange={e => e.target.files && uploadFiles(e.target.files)} ref={multiUploadRef} className="hidden" id="multi-upload" />
+                        <label htmlFor="multi-upload" className="flex items-center gap-2 bg-white/8 border border-white/10 px-5 py-2.5 rounded-full text-sm font-medium cursor-pointer hover:bg-white/12 transition-all">
+                          <Plus className="w-4 h-4" /> Upload Multiple
+                        </label>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Song list */}
-                <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-                    <h2 className="font-bold">
-                      {folderInfoMap[selectedFolder]?.title || selectedFolder}
-                    </h2>
-                    <span className="text-white/40 text-sm">
+                <div className="bg-white/[0.02] border border-white/[0.07] rounded-2xl overflow-hidden">
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.07]">
+                    <h2 className="font-bold text-sm">{folderInfoMap[selectedFolder]?.title || selectedFolder}</h2>
+                    <span className="text-white/30 text-sm">
                       {songs.length} song{songs.length !== 1 ? "s" : ""}
-                      {songs.length > 0 && (
-                        <span className="ml-2 text-white/20 text-xs">
-                          — drag to reorder
-                        </span>
-                      )}
+                      {songs.length > 0 && <span className="ml-2 text-white/15 text-xs">drag to reorder</span>}
                     </span>
                   </div>
 
                   {loadingSongs ? (
-                    <div className="flex items-center gap-3 text-white/40 p-8 justify-center">
-                      <Loader2 className="w-5 h-5 animate-spin" /> Loading…
+                    <div className="space-y-px">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="h-14 shimmer" />
+                      ))}
                     </div>
-                  ) : songs.length === 0 ? (
-                    <div className="text-center text-white/30 py-16">
-                      <Music2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  ) : !songs.length ? (
+                    <div className="text-center text-white/20 py-16">
+                      <Music2 className="w-10 h-10 mx-auto mb-3 opacity-20" />
                       No songs yet. Upload some MP3s above.
                     </div>
                   ) : (
                     <ul>
                       {songs.map((song, idx) => {
-                        const raw = song.startsWith("/") ? song.substring(1) : song;
-                        const isRenaming = renamingIdx === idx;
-                        const isDragTarget = dragOverIdx === idx;
-
+                        const raw       = song.startsWith("/") ? song.substring(1) : song;
+                        const isRen     = renamingIdx === idx;
+                        const isDragTgt = dragOverIdx === idx;
                         return (
                           <li
                             key={`${song}-${idx}`}
@@ -929,83 +649,53 @@ export default function AdminPanel() {
                             onDragStart={() => handleDragStart(idx)}
                             onDragEnter={() => handleDragEnter(idx)}
                             onDragEnd={handleDragEnd}
-                            onDragOver={(e) => e.preventDefault()}
-                            className={`flex items-center gap-3 px-4 py-3 border-b border-white/5 last:border-0 transition-all group ${
-                              isDragTarget ? "drag-over" : "hover:bg-white/5"
-                            } ${isUploading && uploadingIdx === idx ? "opacity-50" : ""}`}
+                            onDragOver={e => e.preventDefault()}
+                            className={`flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.04] last:border-0 transition-all group
+                              ${isDragTgt ? "drag-over" : "hover:bg-white/[0.03]"}`}
                           >
                             {/* Drag handle */}
-                            <span className="text-white/20 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                              <GripVertical className="w-4 h-4" />
-                            </span>
+                            <GripVertical className="w-4 h-4 text-white/15 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
 
                             {/* Index */}
-                            <span className="text-white/30 font-mono text-sm w-6 text-center shrink-0">
+                            <span className="text-white/20 font-mono text-xs w-5 text-center shrink-0">
                               {String(idx + 1).padStart(2, "0")}
                             </span>
 
-                            {/* Name / rename input */}
+                            {/* Name */}
                             <div className="flex-1 min-w-0">
-                              {isRenaming ? (
+                              {isRen ? (
                                 <input
                                   autoFocus
                                   value={renameValue}
-                                  onChange={(e) => setRenameValue(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") commitRename(idx);
-                                    if (e.key === "Escape") setRenamingIdx(null);
-                                  }}
-                                  className="w-full bg-black/60 border border-white/20 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-white/40"
+                                  onChange={e => setRenameValue(e.target.value)}
+                                  onKeyDown={e => { if (e.key === "Enter") commitRename(idx); if (e.key === "Escape") setRenamingIdx(null); }}
+                                  className="w-full bg-black/50 border border-purple-500/40 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-purple-500/70"
                                 />
                               ) : (
-                                <span className="block truncate text-sm">
+                                <span className="text-sm text-white/70 group-hover:text-white/90 transition-colors truncate block">
                                   {cleanSongName(raw)}
-                                  <span className="ml-2 text-white/20 text-xs font-mono hidden sm:inline">
-                                    {raw}
-                                  </span>
                                 </span>
                               )}
                             </div>
 
                             {/* Actions */}
-                            <div className="flex items-center gap-1 shrink-0">
-                              {isRenaming ? (
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              {isRen ? (
                                 <>
-                                  <button
-                                    onClick={() => commitRename(idx)}
-                                    disabled={savingRename}
-                                    className="p-2 rounded-lg hover:bg-emerald-500/20 text-emerald-400 transition-all"
-                                    title="Save"
-                                  >
-                                    {savingRename ? (
-                                      <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                      <Check className="w-4 h-4" />
-                                    )}
+                                  <button onClick={() => commitRename(idx)} disabled={savingRename} className="p-2 rounded-lg hover:bg-emerald-500/15 text-emerald-400 transition-all">
+                                    {savingRename ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                                   </button>
-                                  <button
-                                    onClick={() => setRenamingIdx(null)}
-                                    className="p-2 rounded-lg hover:bg-white/10 text-white/50 transition-all"
-                                    title="Cancel"
-                                  >
+                                  <button onClick={() => setRenamingIdx(null)} className="p-2 rounded-lg hover:bg-white/8 text-white/40 transition-all">
                                     <X className="w-4 h-4" />
                                   </button>
                                 </>
                               ) : (
                                 <>
-                                  <button
-                                    onClick={() => startRename(idx)}
-                                    className="p-2 rounded-lg hover:bg-white/10 text-white/30 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
-                                    title="Rename"
-                                  >
-                                    <Pencil className="w-4 h-4" />
+                                  <button onClick={() => startRename(idx)} className="p-2 rounded-lg hover:bg-white/8 text-white/20 hover:text-white/70 opacity-0 group-hover:opacity-100 transition-all">
+                                    <Pencil className="w-3.5 h-3.5" />
                                   </button>
-                                  <button
-                                    onClick={() => handleDeleteSong(raw)}
-                                    className="p-2 rounded-lg hover:bg-red-500/20 text-white/30 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
+                                  <button onClick={() => handleDeleteSong(raw)} className="p-2 rounded-lg hover:bg-red-500/15 text-white/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
+                                    <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 </>
                               )}
@@ -1018,7 +708,7 @@ export default function AdminPanel() {
                 </div>
               </>
             ) : (
-              <div className="text-center text-white/30 py-20 border border-white/10 border-dashed rounded-2xl">
+              <div className="text-center text-white/20 py-20 border border-white/6 border-dashed rounded-2xl">
                 No playlists found. Create one in the Playlists tab first.
               </div>
             )}
@@ -1026,126 +716,62 @@ export default function AdminPanel() {
         )}
       </main>
 
-      {/* ── Edit Playlist Modal ────────────────────────────────────────────── */}
+      {/* ── Edit modal ──────────────────────────────────────────────────── */}
       {editingFolder && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setEditingFolder(null);
-          }}
-        >
-          <div className="bg-[#141414] border border-white/15 rounded-3xl w-full max-w-md shadow-2xl">
-            {/* Modal header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/10">
-              <h2 className="font-bold text-lg">Edit Playlist</h2>
-              <button
-                onClick={() => setEditingFolder(null)}
-                className="p-2 rounded-xl hover:bg-white/10 text-white/50 transition-all"
-              >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md" onClick={e => { if (e.target === e.currentTarget) setEditingFolder(null); }}>
+          <div className="bg-[#0e0e12] border border-white/10 rounded-3xl w-full max-w-md shadow-2xl shadow-black/60 animate-slide-up">
+            <div className="flex items-center justify-between p-6 border-b border-white/[0.07]">
+              <h2 className="font-bold">Edit Playlist</h2>
+              <button onClick={() => setEditingFolder(null)} className="p-2 rounded-xl hover:bg-white/8 text-white/40 transition-all hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-6 space-y-5">
-              {/* Cover image picker */}
+              {/* Cover */}
               <div className="flex items-center gap-4">
-                <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-white/5 shrink-0">
-                  <img
-                    src={editCoverPreview}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = "/logo.png";
-                    }}
-                    className="w-full h-full object-cover"
-                    alt=""
-                  />
-                  <button
-                    onClick={() => coverInputRef.current?.click()}
-                    className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity"
-                  >
+                <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-white/5 shrink-0 ring-1 ring-white/10">
+                  <img src={editCoverPreview} onError={e => { (e.currentTarget as HTMLImageElement).src = "/logo.png"; }} className="w-full h-full object-cover" alt="" />
+                  <button onClick={() => coverInputRef.current?.click()} className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity">
                     <ImagePlus className="w-5 h-5" />
                   </button>
                 </div>
                 <div>
                   <p className="font-medium text-sm">Cover Image</p>
-                  <p className="text-white/40 text-xs mt-0.5">JPEG, PNG or WebP</p>
-                  <button
-                    onClick={() => coverInputRef.current?.click()}
-                    className="mt-2 text-xs text-white/60 hover:text-white underline underline-offset-2 transition-colors"
-                  >
-                    Change cover
+                  <p className="text-white/35 text-xs mt-0.5">JPEG, PNG or WebP</p>
+                  <button onClick={() => coverInputRef.current?.click()} className="mt-2 text-xs text-purple-400 hover:text-purple-300 transition-colors">
+                    Change cover →
                   </button>
-                  <input
-                    ref={coverInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handleCoverPick}
-                    className="hidden"
-                  />
+                  <input ref={coverInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => { const f = e.target.files?.[0]; if (f) { setEditCoverFile(f); setEditCoverPreview(URL.createObjectURL(f)); } }} className="hidden" />
                 </div>
               </div>
 
               {/* Title */}
               <div>
-                <label className="text-xs font-medium text-white/50 uppercase tracking-widest block mb-2">
-                  Playlist Title
-                </label>
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  placeholder="Enter title…"
-                  className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-white/30 placeholder:text-white/20"
-                />
+                <label className="text-[11px] font-bold tracking-[0.2em] uppercase text-white/35 block mb-2">Title</label>
+                <input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)} className="w-full bg-black/40 border border-white/8 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500/50 placeholder:text-white/20 transition-colors" />
               </div>
 
               {/* Description */}
               <div>
-                <label className="text-xs font-medium text-white/50 uppercase tracking-widest block mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={editDesc}
-                  onChange={(e) => setEditDesc(e.target.value)}
-                  placeholder="Optional description…"
-                  rows={3}
-                  className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-white/30 placeholder:text-white/20 resize-none"
-                />
+                <label className="text-[11px] font-bold tracking-[0.2em] uppercase text-white/35 block mb-2">Description</label>
+                <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} placeholder="Optional…" className="w-full bg-black/40 border border-white/8 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500/50 placeholder:text-white/20 resize-none transition-colors" />
               </div>
             </div>
 
-            {/* Modal footer */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-white/10">
-              <button
-                onClick={() => setEditingFolder(null)}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium text-white/60 hover:bg-white/10 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                disabled={savingEdit}
-                className="flex items-center gap-2 bg-white text-black px-6 py-2.5 rounded-xl text-sm font-bold hover:scale-105 transition-all disabled:opacity-40 disabled:scale-100"
-              >
-                {savingEdit ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Check className="w-4 h-4" />
-                )}
-                Save Changes
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-white/[0.07]">
+              <button onClick={() => setEditingFolder(null)} className="px-5 py-2.5 rounded-xl text-sm font-medium text-white/40 hover:bg-white/6 transition-all">Cancel</button>
+              <button onClick={handleSaveEdit} disabled={savingEdit} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 hover:scale-105 active:scale-95 transition-all disabled:opacity-40 shadow-lg shadow-purple-900/30">
+                {savingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Save
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Toast ─────────────────────────────────────────────────────────── */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {/* ── Toast ───────────────────────────────────────────────────────── */}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }

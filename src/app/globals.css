@@ -8,6 +8,8 @@
 :root {
   --background: #000000;
   --foreground: #ffffff;
+  --accent:     #a855f7;
+  --accent2:    #6366f1;
 }
 
 body {
@@ -15,49 +17,139 @@ body {
   background: var(--background);
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Hide scrollbars for the immersive feel */
+  overflow: hidden;
 }
 
-/* Custom Scrollbar for inner elements only */
-::-webkit-scrollbar {
-  width: 0px;
-  background: transparent; /* make scrollbar invisible */
-}
+/* ── Scrollbars ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 0px; background: transparent; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* ── Background cover sway ───────────────────────────────────────────────── */
 @keyframes sway {
-  0% { transform: scale(1.5) translate(0, 0); }
-  25% { transform: scale(1.55) translate(-2%, 2%); }
-  50% { transform: scale(1.5) translate(2%, -2%); }
-  75% { transform: scale(1.55) translate(-2%, -2%); }
-  100% { transform: scale(1.5) translate(0, 0); }
+  0%   { transform: scale(1.6) translate(0, 0)       rotate(0deg); }
+  25%  { transform: scale(1.65) translate(-3%, 3%)   rotate(1deg); }
+  50%  { transform: scale(1.6)  translate(3%, -3%)   rotate(-1deg); }
+  75%  { transform: scale(1.65) translate(-2%, -2%)  rotate(0.5deg); }
+  100% { transform: scale(1.6)  translate(0, 0)       rotate(0deg); }
 }
+.animate-sway { animation: sway 25s ease-in-out infinite alternate; }
 
-.animate-sway {
-  animation: sway 30s ease-in-out infinite alternate;
-}
-
+/* ── Track title float ───────────────────────────────────────────────────── */
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-14px); }
+}
+.animate-float { animation: float 7s ease-in-out infinite; }
+
+/* ── Waveform bars ───────────────────────────────────────────────────────── */
+@keyframes bar1 { 0%,100%{height:4px}  50%{height:18px} }
+@keyframes bar2 { 0%,100%{height:10px} 50%{height:4px}  }
+@keyframes bar3 { 0%,100%{height:16px} 50%{height:8px}  }
+@keyframes bar4 { 0%,100%{height:6px}  50%{height:20px} }
+@keyframes bar5 { 0%,100%{height:12px} 50%{height:4px}  }
+
+.wave-bar-1 { animation: bar1 0.8s ease-in-out infinite; }
+.wave-bar-2 { animation: bar2 0.9s ease-in-out infinite 0.1s; }
+.wave-bar-3 { animation: bar3 0.7s ease-in-out infinite 0.2s; }
+.wave-bar-4 { animation: bar4 1.0s ease-in-out infinite 0.05s; }
+.wave-bar-5 { animation: bar5 0.85s ease-in-out infinite 0.15s; }
+
+/* ── Orb pulse glow ──────────────────────────────────────────────────────── */
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.5; }
+  50%       { transform: scale(1.15); opacity: 0.9; }
+}
+.animate-orb { animation: orb-pulse 4s ease-in-out infinite; }
+
+/* ── Gradient shift on play button ──────────────────────────────────────── */
+@keyframes grad-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-grad {
+  background: linear-gradient(270deg, #a855f7, #6366f1, #ec4899, #a855f7);
+  background-size: 300% 300%;
+  animation: grad-shift 4s ease infinite;
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
+/* ── Ring spin ───────────────────────────────────────────────────────────── */
+@keyframes ring-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.animate-ring { animation: ring-spin 8s linear infinite; }
+
+/* ── Slide in from bottom ────────────────────────────────────────────────── */
+@keyframes slide-up {
+  from { opacity:0; transform: translateY(24px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.animate-slide-up { animation: slide-up 0.4s cubic-bezier(0.16,1,0.3,1); }
+
+/* ── Fade in ─────────────────────────────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in { animation: fade-in 0.5s ease-out; }
+
+/* ── Scale pop ───────────────────────────────────────────────────────────── */
+@keyframes pop {
+  0%   { transform: scale(0.85); opacity: 0; }
+  70%  { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.animate-pop { animation: pop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+
+/* ── Shimmer skeleton ────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
 }
 
+/* ── Neon glow text ──────────────────────────────────────────────────────── */
+.neon-text {
+  text-shadow:
+    0 0 8px rgba(168,85,247,0.8),
+    0 0 20px rgba(168,85,247,0.5),
+    0 0 40px rgba(168,85,247,0.3);
+}
+
+/* ── Glass morphism ──────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.08);
+}
 .glass-pill {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 8px 48px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
+/* ── Drag over state (admin) ─────────────────────────────────────────────── */
+.drag-over {
+  outline: 2px dashed rgba(168,85,247,0.5);
+  outline-offset: -2px;
+  background: rgba(168,85,247,0.06);
 }
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+
+/* ── Progress bar accent ─────────────────────────────────────────────────── */
+.progress-bar {
+  background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+}
+
+/* ── Admin sidebar gradient line ─────────────────────────────────────────── */
+.sidebar-accent {
+  background: linear-gradient(180deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
 }
