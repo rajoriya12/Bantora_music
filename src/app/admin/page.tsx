@@ -72,7 +72,7 @@ function Toast({ message, type, onClose }: { message: string; type: "success" | 
       {type === "success"
         ? <Check className="w-4 h-4 shrink-0" />
         : <AlertTriangle className="w-4 h-4 shrink-0" />}
-      {message}
+      <span className="break-words">{message}</span>
       <button onClick={onClose} className="ml-1 opacity-50 hover:opacity-100 transition-opacity"><X className="w-3.5 h-3.5" /></button>
     </div>
   );
@@ -364,7 +364,7 @@ export default function AdminPanel() {
       </div>
 
       {/* ── Sidebar ────────────────────────────────────────────────────── */}
-      <aside className="relative z-10 w-full md:w-60 shrink-0 border-b md:border-b-0 md:border-r border-white/[0.06] flex md:flex-col px-4 py-4 md:py-6 gap-1 overflow-x-auto md:overflow-visible bg-[#070709]/80 backdrop-blur-xl">
+      <aside className="relative z-10 w-full md:w-60 shrink-0 border-b md:border-b-0 md:border-r border-white/[0.06] flex md:flex-col px-3 py-3 sm:px-4 sm:py-4 md:py-6 gap-1 overflow-x-auto md:overflow-visible bg-[#070709]/80 backdrop-blur-xl">
         {/* Logo */}
         <div className="hidden md:flex items-center gap-3 px-3 mb-8">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-900/50">
@@ -399,7 +399,7 @@ export default function AdminPanel() {
       </aside>
 
       {/* ── Main ───────────────────────────────────────────────────────── */}
-      <main className="relative z-10 flex-1 min-h-screen overflow-y-auto p-6 md:p-10">
+      <main className="relative z-10 flex-1 min-h-screen overflow-y-auto p-4 sm:p-6 md:p-10">
 
         {/* ──────────────── DASHBOARD ──────────────── */}
         {activeTab === "dashboard" && (
@@ -480,7 +480,7 @@ export default function AdminPanel() {
               <p className="text-[11px] font-bold tracking-[0.25em] uppercase text-white/35 mb-4 flex items-center gap-2">
                 <Plus className="w-3.5 h-3.5" /> New Playlist
               </p>
-              <form onSubmit={handleCreateFolder} className="flex gap-3">
+              <form onSubmit={handleCreateFolder} className="flex flex-col gap-3 sm:flex-row">
                 <input
                   type="text"
                   placeholder="e.g. chill-vibes"
@@ -491,7 +491,7 @@ export default function AdminPanel() {
                 <button
                   type="submit"
                   disabled={creatingFolder || !newFolderName.trim()}
-                  className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-3 rounded-xl text-sm font-bold hover:opacity-90 hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100 shadow-lg shadow-purple-900/40"
+                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-3 rounded-xl text-sm font-bold hover:opacity-90 hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100 shadow-lg shadow-purple-900/40"
                 >
                   {creatingFolder ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   Create
@@ -771,7 +771,7 @@ export default function AdminPanel() {
       )}
 
       {/* ── Toast ───────────────────────────────────────────────────────── */}
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {toast && <div className="fixed inset-x-4 bottom-4 z-[100] sm:inset-auto sm:right-6 sm:bottom-6"><Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} /></div>}
     </div>
   );
 }
