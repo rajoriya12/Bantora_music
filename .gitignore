@@ -5,3 +5,10 @@ ios/App/App/public/
 *.xcworkspace/xcuserdata
 *.xcodeproj/xcuserdata
 DerivedData/
+
+# Exclude MP3s — too large for GitHub
+www/songs/**/*.mp3
+
+# Exclude large image assets
+ios/App/App/Assets.xcassets/Splash.imageset/*.png
+ios/App/App/Assets.xcassets/AppIcon.appiconset/*.png
