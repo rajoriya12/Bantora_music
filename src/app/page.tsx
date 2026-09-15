@@ -285,7 +285,7 @@ export default function MusicPlayer() {
   }, [folders]);
 
   useEffect(() => {
-    if (!currentFolder) return;
+    if (!currentFolder || currentFolder === "__MIX_ALL__") return;
     fetch(`/songs/${currentFolder}/playlist.json`)
       .then(r => r.ok ? r.json() : [])
       .then((d: string[]) => { setSongs(d); setCurrentSongIndex(0); })
