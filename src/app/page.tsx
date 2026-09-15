@@ -162,6 +162,7 @@ export default function MusicPlayer() {
         const url = blobStore.current.get(nextSong.id);
         if (url && audioRef.current) {
           audioRef.current.src = url;
+          setIsPlaying(true);
           audioRef.current.play().catch(() => {});
           setMyLibSongId(nextSong.id);
           setTrackKey(k => k + 1);
@@ -175,6 +176,7 @@ export default function MusicPlayer() {
           const url = blobStore.current.get(firstSong.id);
           if (url && audioRef.current) {
             audioRef.current.src = url;
+            setIsPlaying(true);
             audioRef.current.play().catch(() => {});
             setMyLibSongId(firstSong.id);
             setTrackKey(k => k + 1);
@@ -194,6 +196,7 @@ export default function MusicPlayer() {
         
         if (shuffledPos < shuffledIndices.length - 1) {
           // Move to next in shuffled order
+          setIsPlaying(true);
           setCurrentSongIndex(shuffledIndices[shuffledPos + 1]);
         } else {
           // Reached end of shuffle
@@ -201,6 +204,7 @@ export default function MusicPlayer() {
             // Re-shuffle and start over
             const newShuffled = shuffleArray(Array.from({ length: songs.length }, (_, i) => i));
             setShuffledIndices(newShuffled);
+            setIsPlaying(true);
             setCurrentSongIndex(newShuffled[0]);
           } else {
             setIsPlaying(false);
@@ -209,10 +213,12 @@ export default function MusicPlayer() {
       } else {
         // Sequential playback
         if (currentSongIndex < maxIndex) {
+          setIsPlaying(true);
           setCurrentSongIndex(i => i + 1);
         } else {
           // Reached end
           if (repeatMode === "all") {
+            setIsPlaying(true);
             setCurrentSongIndex(0);
           } else {
             setIsPlaying(false);
