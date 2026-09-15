@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Play, Pause, SkipBack, SkipForward, Library, X, Search, Settings,
-  Music2, FolderOpen, Plus, Trash2, ListMusic,
+  Music2, FolderOpen, Plus, Trash2, ListMusic, Shuffle, Repeat, Layers,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -73,6 +73,16 @@ function cleanFileName(filename: string) {
   return name || "Unknown Track";
 }
 
+// Fisher-Yates shuffle algorithm
+function shuffleArray<T>(arr: T[]): T[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 // ── Waveform component ────────────────────────────────────────────────────────
 
 function Waveform() {
@@ -103,6 +113,12 @@ export default function MusicPlayer() {
   const [isPlaying, setIsPlaying]   = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration]     = useState(0);
+
+  // ── Playback modes ─────────────────────────────────────────────────────────
+  const [shuffleMode, setShuffleMode] = useState(false);
+  const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
+  const [repeatMode, setRepeatMode] = useState<"off" | "all" | "one">("off");
+  const [mixAllMode, setMixAllMode] = useState(false);
 
   // ── UI state ───────────────────────────────────────────────────────────────
   const [showLibrary, setShowLibrary] = useState(false);
@@ -152,14 +168,60 @@ export default function MusicPlayer() {
           setCoverLoaded(false);
         }
       } else {
-        setIsPlaying(false);
+        // End of my-lib playlist
+        if (repeatMode === "all") {
+          // Loop back to first song
+          const firstSong = pl.songs[0];
+          const url = blobStore.current.get(firstSong.id);
+          if (url && audioRef.current) {
+            audioRef.current.src = url;
+            audioRef.current.play().catch(() => {});
+            setMyLibSongId(firstSong.id);
+            setTrackKey(k => k + 1);
+            setCoverLoaded(false);
+          }
+        } else {
+          setIsPlaying(false);
+        }
       }
     } else {
-      if (currentSongIndex < songs.length - 1) setCurrentSongIndex(i => i + 1);
-      else setIsPlaying(false);
+      // Server playlist navigation with shuffle support
+      const maxIndex = songs.length - 1;
+      
+      if (shuffleMode && shuffledIndices.length > 0) {
+        // Find current position in shuffled order
+        const shuffledPos = shuffledIndices.indexOf(currentSongIndex);
+        
+        if (shuffledPos < shuffledIndices.length - 1) {
+          // Move to next in shuffled order
+          setCurrentSongIndex(shuffledIndices[shuffledPos + 1]);
+        } else {
+          // Reached end of shuffle
+          if (repeatMode === "all") {
+            // Re-shuffle and start over
+            const newShuffled = shuffleArray(Array.from({ length: songs.length }, (_, i) => i));
+            setShuffledIndices(newShuffled);
+            setCurrentSongIndex(newShuffled[0]);
+          } else {
+            setIsPlaying(false);
+          }
+        }
+      } else {
+        // Sequential playback
+        if (currentSongIndex < maxIndex) {
+          setCurrentSongIndex(i => i + 1);
+        } else {
+          // Reached end
+          if (repeatMode === "all") {
+            setCurrentSongIndex(0);
+          } else {
+            setIsPlaying(false);
+          }
+        }
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myLibSongId, myLibPlaylistId, myPlaylists, currentSongIndex, songs]);
+  }, [myLibSongId, myLibPlaylistId, myPlaylists, currentSongIndex, songs, shuffleMode, shuffledIndices, repeatMode]);
 
   useEffect(() => {
     audioRef.current = new Audio();
@@ -181,10 +243,18 @@ export default function MusicPlayer() {
   useEffect(() => {
     if (!audioRef.current) return;
     const audio = audioRef.current;
-    const onEnded = () => handleNext();
+    const onEnded = () => {
+      // Repeat One: replay current song
+      if (repeatMode === "one") {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+      } else {
+        handleNext();
+      }
+    };
     audio.addEventListener("ended", onEnded);
     return () => audio.removeEventListener("ended", onEnded);
-  }, [handleNext]);
+  }, [handleNext, repeatMode]);
 
   // ── Load my lib from localStorage ─────────────────────────────────────────
   useEffect(() => {
@@ -224,11 +294,23 @@ export default function MusicPlayer() {
 
   // ── Audio source update (server songs) ────────────────────────────────────
   useEffect(() => {
-    if (!songs.length || !audioRef.current || !currentFolder) return;
+    if (!songs.length || !audioRef.current) return;
     if (myLibSongId) return; // currently playing a my-lib song — don't override
+    
+    let src = "";
     let p = songs[currentSongIndex];
-    if (p.startsWith("/")) p = p.substring(1);
-    const src = `/songs/${currentFolder}/${p}`;
+    
+    if (mixAllMode || currentFolder === "__MIX_ALL__") {
+      // Mix mode - song already has full path like "/folder/song.mp3"
+      src = `/songs${p}`;
+    } else if (currentFolder) {
+      // Normal mode - construct path
+      if (p.startsWith("/")) p = p.substring(1);
+      src = `/songs/${currentFolder}/${p}`;
+    } else {
+      return;
+    }
+    
     if (!audioRef.current.src.endsWith(src.replace(/ /g, "%20"))) {
       audioRef.current.src = src;
       setCurrentTime(0);
@@ -237,7 +319,7 @@ export default function MusicPlayer() {
       if (isPlaying) audioRef.current.play().catch(() => {});
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSongIndex, songs, currentFolder]);
+  }, [currentSongIndex, songs, currentFolder, mixAllMode]);
 
   // ── Controls ───────────────────────────────────────────────────────────────
   const togglePlay = () => {
@@ -273,6 +355,75 @@ export default function MusicPlayer() {
     const t = parseFloat(e.target.value);
     audioRef.current.currentTime = t;
     setCurrentTime(t);
+  };
+
+  // ── Playback mode controls ─────────────────────────────────────────────────
+  const toggleShuffle = () => {
+    if (!shuffleMode) {
+      // Turning shuffle ON
+      const indices = Array.from({ length: songs.length }, (_, i) => i);
+      const shuffled = shuffleArray(indices);
+      setShuffledIndices(shuffled);
+      setShuffleMode(true);
+    } else {
+      // Turning shuffle OFF
+      setShuffledIndices([]);
+      setShuffleMode(false);
+    }
+  };
+
+  const cycleRepeat = () => {
+    if (repeatMode === "off") setRepeatMode("all");
+    else if (repeatMode === "all") setRepeatMode("one");
+    else setRepeatMode("off");
+  };
+
+  const toggleMixAll = () => {
+    if (!mixAllMode) {
+      // Turning Mix All ON - combine all server playlists
+      const promises = folders.map(folder =>
+        fetch(`/songs/${folder}/playlist.json`)
+          .then(r => r.ok ? r.json() : [])
+          .then((playlist: string[]) => 
+            playlist.map(song => ({
+              folder,
+              song: song.startsWith("/") ? song.substring(1) : song
+            }))
+          )
+          .catch(() => [])
+      );
+
+      Promise.all(promises).then(allPlaylists => {
+        const megaPlaylist: Song[] = [];
+        allPlaylists.forEach(folderSongs => {
+          folderSongs.forEach(({ folder, song }) => {
+            // Store songs with folder prefix for later playback
+            megaPlaylist.push(`/${folder}/${song}`);
+          });
+        });
+
+        if (megaPlaylist.length > 0) {
+          setSongs(megaPlaylist);
+          setCurrentSongIndex(0);
+          setCurrentFolder("__MIX_ALL__");
+          setMixAllMode(true);
+
+          // Apply shuffle if enabled
+          if (shuffleMode) {
+            const indices = Array.from({ length: megaPlaylist.length }, (_, i) => i);
+            setShuffledIndices(shuffleArray(indices));
+          }
+        }
+      });
+    } else {
+      // Turning Mix All OFF - revert to first folder
+      setMixAllMode(false);
+      setShuffledIndices([]);
+      if (folders.length > 0) {
+        setCurrentFolder(folders[0]);
+        // The useEffect will reload the playlist
+      }
+    }
   };
 
   // ── My Library helpers ─────────────────────────────────────────────────────
@@ -386,7 +537,7 @@ export default function MusicPlayer() {
     currentTrackSubtitle = folderInfo[currentFolder] || "";
   }
 
-  const currentCover   = (myLibSongId) ? "/logo.png" : (currentFolder ? `/songs/${currentFolder}/cover.jpeg` : "/logo.png");
+  const currentCover   = (myLibSongId) ? "/logo.png" : (mixAllMode || currentFolder === "__MIX_ALL__") ? "/logo.png" : (currentFolder ? `/songs/${currentFolder}/cover.jpeg` : "/logo.png");
   const progressPct    = duration ? (currentTime / duration) * 100 : 0;
 
   const openedPlaylist = myPlaylists.find(p => p.id === openMyPlaylist);
@@ -462,11 +613,22 @@ export default function MusicPlayer() {
         <div className="animate-fade-in">
           <p className="text-purple-400/80 text-[10px] font-bold tracking-[0.3em] uppercase">Now Playing</p>
           <p className="text-white/70 font-semibold tracking-wide text-sm mt-0.5">
-            {myLibSongId ? (myPlaylists.find(p => p.id === myLibPlaylistId)?.name ?? "My Library") : (folderInfo[currentFolder] || "Bantora")}
+            {mixAllMode ? "Mix Mode" : myLibSongId ? (myPlaylists.find(p => p.id === myLibPlaylistId)?.name ?? "My Library") : (folderInfo[currentFolder] || "Bantora")}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={toggleMixAll}
+            className={`w-10 h-10 flex items-center justify-center rounded-full glass border transition-all hover:scale-110 ${
+              mixAllMode
+                ? "border-purple-500/40 bg-purple-500/20 text-purple-400"
+                : "border-white/10 hover:bg-white/10 text-white/50"
+            }`}
+            title="Mix All Playlists"
+          >
+            <Layers className="w-4 h-4" />
+          </button>
           <Link
             href="/admin"
             className="w-10 h-10 flex items-center justify-center rounded-full glass border-white/10 hover:bg-white/10 hover:scale-110 transition-all"
@@ -546,6 +708,19 @@ export default function MusicPlayer() {
           {/* Buttons */}
           <div className="flex items-center justify-center gap-8">
             <button
+              onClick={toggleShuffle}
+              disabled={songs.length <= 1}
+              className={`w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95 ${
+                shuffleMode 
+                  ? "text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.6)]" 
+                  : "text-white/40 hover:bg-white/10 hover:text-white/60"
+              } ${songs.length <= 1 ? "opacity-30 cursor-not-allowed" : ""}`}
+              title="Shuffle"
+            >
+              <Shuffle className="w-5 h-5" />
+            </button>
+
+            <button
               onClick={handlePrev}
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-all hover:scale-110 active:scale-95"
             >
@@ -571,6 +746,23 @@ export default function MusicPlayer() {
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-all hover:scale-110 active:scale-95"
             >
               <SkipForward className="w-5 h-5 fill-current" />
+            </button>
+
+            <button
+              onClick={cycleRepeat}
+              className={`relative w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95 ${
+                repeatMode !== "off"
+                  ? "text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.6)]"
+                  : "text-white/40 hover:bg-white/10 hover:text-white/60"
+              }`}
+              title={`Repeat: ${repeatMode === "off" ? "Off" : repeatMode === "all" ? "All" : "One"}`}
+            >
+              <Repeat className="w-5 h-5" />
+              {repeatMode === "one" && (
+                <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-purple-500 rounded-full flex items-center justify-center text-[8px] font-bold text-white">
+                  1
+                </span>
+              )}
             </button>
           </div>
         </div>

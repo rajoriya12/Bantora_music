@@ -3,6 +3,14 @@ import fs from 'fs';
 import path from 'path';
 
 export async function POST(req: Request) {
+  // Check if running on Vercel (read-only filesystem)
+  if (process.env.VERCEL === "1") {
+    return NextResponse.json(
+      { error: "Admin panel only works locally. Run 'npm run dev' on your Mac to upload songs." },
+      { status: 403 }
+    );
+  }
+
   try {
     const formData = await req.formData();
     const folder = formData.get('folder') as string;
