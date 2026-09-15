@@ -316,7 +316,8 @@ export default function MusicPlayer() {
       setCurrentTime(0);
       setCoverLoaded(false);
       setTrackKey(k => k + 1);
-      if (isPlaying) audioRef.current.play().catch(() => {});
+      // Always auto-play next song unless we explicitly stopped (reached playlist end)
+      audioRef.current.play().catch(() => {});
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSongIndex, songs, currentFolder, mixAllMode]);
