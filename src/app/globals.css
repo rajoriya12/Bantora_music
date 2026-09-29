@@ -154,3 +154,127 @@ body {
 .sidebar-accent {
   background: linear-gradient(180deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
 }
+
+/* ── Authentic Bantora Vinyl Grooves ───────────────────────────────────────── */
+.vinyl-disc {
+  background: repeating-radial-gradient(
+    #111111,
+    #111111 4px,
+    #222222 5px,
+    #181818 6px
+  );
+  box-shadow: 0 0 60px rgba(0,0,0,0.9), inset 0 0 30px rgba(255,255,255,0.06);
+}
+
+@keyframes spin-continuous {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-vinyl-spin {
+  animation: spin-continuous 7s linear infinite;
+}
+
+/* ── Authentic Bantora Fluid Background Blobs ────────────────────────────── */
+.blob {
+  position: absolute;
+  filter: blur(80px);
+  opacity: 0.55;
+  animation: morph 15s infinite alternate ease-in-out;
+  border-radius: 50%;
+}
+
+.blob1 {
+  width: 420px;
+  height: 420px;
+  background: #b052ff;
+  top: -100px;
+  left: -100px;
+}
+
+.blob2 {
+  width: 520px;
+  height: 520px;
+  background: #00e5ff;
+  bottom: -150px;
+  right: -100px;
+  animation-delay: -5s;
+}
+
+.blob3 {
+  width: 320px;
+  height: 320px;
+  background: #ff2a5f;
+  top: 40%;
+  left: 40%;
+  animation-delay: -10s;
+}
+
+/* ── Cyber Neon & Audiophile Dark Mode Utilities ────────────────────────── */
+.bg-oled {
+  background-color: #05070b;
+}
+
+.bg-oled-surface {
+  background-color: #0b0e14;
+}
+
+.bg-oled-card {
+  background-color: rgba(16, 20, 29, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.bg-oled-card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.border-subtle {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.neon-glow-purple {
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.45);
+}
+
+.neon-glow-cyan {
+  box-shadow: 0 0 25px rgba(6, 182, 212, 0.45);
+}
+
+.neon-border-cyan {
+  border-color: rgba(6, 182, 212, 0.5);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+}
+
+/* ── Realtime Animated Equalizer ─────────────────────────────────────────── */
+@keyframes eq-1 { 0%, 100% { height: 6px; } 50% { height: 28px; } }
+@keyframes eq-2 { 0%, 100% { height: 18px; } 50% { height: 8px; } }
+@keyframes eq-3 { 0%, 100% { height: 10px; } 50% { height: 32px; } }
+@keyframes eq-4 { 0%, 100% { height: 24px; } 50% { height: 12px; } }
+@keyframes eq-5 { 0%, 100% { height: 8px; } 50% { height: 20px; } }
+@keyframes eq-6 { 0%, 100% { height: 20px; } 50% { height: 6px; } }
+@keyframes eq-7 { 0%, 100% { height: 14px; } 50% { height: 30px; } }
+@keyframes eq-8 { 0%, 100% { height: 26px; } 50% { height: 10px; } }
+
+.eq-bar-1 { animation: eq-1 0.7s ease-in-out infinite; }
+.eq-bar-2 { animation: eq-2 0.85s ease-in-out infinite 0.1s; }
+.eq-bar-3 { animation: eq-3 0.65s ease-in-out infinite 0.2s; }
+.eq-bar-4 { animation: eq-4 0.9s ease-in-out infinite 0.05s; }
+.eq-bar-5 { animation: eq-5 0.75s ease-in-out infinite 0.15s; }
+.eq-bar-6 { animation: eq-6 0.8s ease-in-out infinite 0.25s; }
+.eq-bar-7 { animation: eq-7 0.7s ease-in-out infinite 0.3s; }
+.eq-bar-8 { animation: eq-8 0.95s ease-in-out infinite 0.1s; }
+
+/* ── Cyber gradient button ───────────────────────────────────────────────── */
+.btn-cyber-primary {
+  background: linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #06b6d4 100%);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-cyber-primary:hover {
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.6), 0 0 10px rgba(6, 182, 212, 0.4);
+  transform: scale(1.04);
+}
+
+

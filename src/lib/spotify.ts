@@ -40,7 +40,7 @@ export async function generateCodeChallenge(verifier: string): Promise<string> {
 }
 
 export function buildAuthUrl(challenge: string): string {
-  const clientId = process.env.SPOTIFYkey110!;
+  const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || process.env.SPOTIFYkey110 || "";
   const redirectUri = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI!;
   const scopes = [
     "streaming",

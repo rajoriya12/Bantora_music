@@ -78,13 +78,14 @@ export function useSpotify() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch user profile when token is available
+  // Fetch user profile and playlists when token is available
   useEffect(() => {
     if (!spotifyToken) return;
     getSpotifyUser(spotifyToken)
       .then(user => {
         setSpotifyUser(user);
         setIsPremium(user.product === "premium");
+        getSpotifyPlaylists(spotifyToken).then(setSpotifyPlaylists).catch(() => {});
       })
       .catch(() => {
         // Token might be expired, try refresh
@@ -149,10 +150,12 @@ export function useSpotify() {
       playerRef.current = player;
     };
 
-    if (window.Spotify) {
-      initPlayer();
-    } else {
-      window.onSpotifyWebPlaybackSDKReady = initPlayer;
+    if (typeof window !== "undefined") {
+      if (window.Spotify) {
+        initPlayer();
+      } else {
+        window.onSpotifyWebPlaybackSDKReady = initPlayer;
+      }
     }
 
     return () => {
