@@ -6,6 +6,9 @@ import {
   Music2, FolderOpen, Plus, Trash2, ListMusic, Shuffle, Repeat, Layers,
 } from "lucide-react";
 import Link from "next/link";
+import Script from "next/script";
+import { useSpotify } from "@/hooks/useSpotify";
+import type { SpotifyTrack } from "@/lib/spotify";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -122,7 +125,7 @@ export default function MusicPlayer() {
 
   // ── UI state ───────────────────────────────────────────────────────────────
   const [showLibrary, setShowLibrary] = useState(false);
-  const [libraryTab, setLibraryTab] = useState<"playlists" | "mylib">("playlists");
+  const [libraryTab, setLibraryTab] = useState<"playlists" | "mylib" | "spotify">("playlists");
   const [searchQuery, setSearchQuery] = useState("");
   const [coverLoaded, setCoverLoaded] = useState(false);
   const [trackKey, setTrackKey]     = useState(0);
@@ -144,6 +147,15 @@ export default function MusicPlayer() {
   const [showNewPlaylistModal, setShowNewPlaylistModal] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
 
+  // ── Spotify integration ────────────────────────────────────────────────────
+  const {
+    spotifyToken, spotifyUser, spotifyPlaylists, spotifyTracks, setSpotifyTracks,
+    spotifySearchResults, isPremium, currentSpotifyTrack, playbackMode,
+    setPlaybackMode, sdkReady: _sdkReady, spotifyError, setSpotifyError, spotifyLoading,
+    connectSpotify, disconnectSpotify, playSpotifyTrack, pauseSpotify, resumeSpotify,
+    nextSpotifyTrack, prevSpotifyTrack, loadPlaylists, loadPlaylistTracks, searchSpotify,
+  } = useSpotify();
+
   // file input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
   const addSongsTargetRef = useRef<string | null>(null); // playlist id
@@ -152,6 +164,7 @@ export default function MusicPlayer() {
 
   // ── Audio engine ───────────────────────────────────────────────────────────
   const handleNext = useCallback(() => {
+    if (playbackMode === "spotify") { nextSpotifyTrack(); return; }
     if (myLibSongId && myLibPlaylistId) {
       // advance in my-lib playlist
       const pl = myPlaylists.find(p => p.id === myLibPlaylistId);
@@ -227,7 +240,7 @@ export default function MusicPlayer() {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myLibSongId, myLibPlaylistId, myPlaylists, currentSongIndex, songs, shuffleMode, shuffledIndices, repeatMode]);
+  }, [myLibSongId, myLibPlaylistId, myPlaylists, currentSongIndex, songs, shuffleMode, shuffledIndices, repeatMode, playbackMode, nextSpotifyTrack]);
 
   useEffect(() => {
     audioRef.current = new Audio();
@@ -330,6 +343,11 @@ export default function MusicPlayer() {
 
   // ── Controls ───────────────────────────────────────────────────────────────
   const togglePlay = () => {
+    if (playbackMode === "spotify") {
+      if (isPlaying) { pauseSpotify(); } else { resumeSpotify(); }
+      setIsPlaying(p => !p);
+      return;
+    }
     if (!audioRef.current) return;
     if (isPlaying) { audioRef.current.pause(); }
     else { audioRef.current.play().catch(() => {}); }
@@ -337,6 +355,7 @@ export default function MusicPlayer() {
   };
 
   const handlePrev = () => {
+    if (playbackMode === "spotify") { prevSpotifyTrack(); return; }
     if (myLibSongId && myLibPlaylistId) {
       const pl = myPlaylists.find(p => p.id === myLibPlaylistId);
       if (!pl) return;
@@ -528,13 +547,23 @@ export default function MusicPlayer() {
     setShowLibrary(false);
   };
 
+  // ── Spotify search effect ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (spotifyToken && searchQuery) {
+      searchSpotify(searchQuery);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, spotifyToken]);
+
   // ── Derived values ─────────────────────────────────────────────────────────
   const filteredSongs  = songs.filter(s => cleanSongName(s).toLowerCase().includes(searchQuery.toLowerCase()));
-
   let currentTrack = "Select a track";
   let currentTrackSubtitle = "";
 
-  if (myLibSongId && myLibPlaylistId) {
+  if (playbackMode === "spotify" && currentSpotifyTrack) {
+    currentTrack = currentSpotifyTrack.name;
+    currentTrackSubtitle = currentSpotifyTrack.artists.map((a: { name: string }) => a.name).join(", ");
+  } else if (myLibSongId && myLibPlaylistId) {
     const pl = myPlaylists.find(p => p.id === myLibPlaylistId);
     const song = pl?.songs.find(s => s.id === myLibSongId);
     currentTrack = song?.name ?? "Unknown Track";
@@ -544,7 +573,11 @@ export default function MusicPlayer() {
     currentTrackSubtitle = folderInfo[currentFolder] || "";
   }
 
-  const currentCover   = (myLibSongId) ? "/logo.png" : (mixAllMode || currentFolder === "__MIX_ALL__") ? "/logo.png" : (currentFolder ? `/songs/${currentFolder}/cover.jpeg` : "/logo.png");
+  const currentCover = (playbackMode === "spotify" && currentSpotifyTrack)
+    ? (currentSpotifyTrack.album.images[0]?.url ?? "/logo.png")
+    : (myLibSongId) ? "/logo.png"
+    : (mixAllMode || currentFolder === "__MIX_ALL__") ? "/logo.png"
+    : (currentFolder ? `/songs/${currentFolder}/cover.jpeg` : "/logo.png");
   const progressPct    = duration ? (currentTime / duration) * 100 : 0;
 
   const openedPlaylist = myPlaylists.find(p => p.id === openMyPlaylist);
@@ -620,7 +653,7 @@ export default function MusicPlayer() {
         <div className="animate-fade-in">
           <p className="text-purple-400/80 text-[10px] font-bold tracking-[0.3em] uppercase">Now Playing</p>
           <p className="text-white/70 font-semibold tracking-wide text-sm mt-0.5">
-            {mixAllMode ? "Mix Mode" : myLibSongId ? (myPlaylists.find(p => p.id === myLibPlaylistId)?.name ?? "My Library") : (folderInfo[currentFolder] || "Bantora")}
+            {playbackMode === "spotify" ? "Spotify" : mixAllMode ? "Mix Mode" : myLibSongId ? (myPlaylists.find(p => p.id === myLibPlaylistId)?.name ?? "My Library") : (folderInfo[currentFolder] || "Bantora")}
           </p>
         </div>
 
@@ -636,6 +669,26 @@ export default function MusicPlayer() {
           >
             <Layers className="w-4 h-4" />
           </button>
+          {spotifyToken ? (
+            <button
+              onClick={disconnectSpotify}
+              className="flex items-center gap-1.5 px-3 h-10 rounded-full glass border border-green-500/30 bg-green-500/10 text-green-400 text-xs font-semibold hover:bg-green-500/20 transition-all hover:scale-105"
+              title="Disconnect Spotify"
+            >
+              <div className="w-2 h-2 rounded-full bg-green-400" />
+              {spotifyUser?.display_name?.split(" ")[0] || "Spotify"}
+            </button>
+          ) : (
+            <button
+              onClick={connectSpotify}
+              disabled={spotifyLoading}
+              className="flex items-center gap-1.5 px-3 h-10 rounded-full glass border border-white/10 text-white/60 text-xs font-semibold hover:bg-white/10 transition-all hover:scale-105 disabled:opacity-50"
+              title="Connect Spotify"
+            >
+              <Music2 className="w-3.5 h-3.5" />
+              {spotifyLoading ? "Connecting…" : "Spotify"}
+            </button>
+          )}
           <Link
             href="/admin"
             className="w-10 h-10 flex items-center justify-center rounded-full glass border-white/10 hover:bg-white/10 hover:scale-110 transition-all"
@@ -825,6 +878,17 @@ export default function MusicPlayer() {
                   <Music2 className="w-4 h-4" />
                   My Library
                 </button>
+                <button
+                  onClick={() => { setLibraryTab("spotify"); loadPlaylists(); }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    libraryTab === "spotify"
+                      ? "bg-green-500/20 text-green-300 shadow-sm"
+                      : "text-white/40 hover:text-white/70"
+                  }`}
+                >
+                  <Music2 className="w-4 h-4" />
+                  Spotify
+                </button>
               </div>
             </div>
 
@@ -932,6 +996,32 @@ export default function MusicPlayer() {
                       <p className="text-center text-white/25 text-sm py-12">No tracks found.</p>
                     )}
                   </div>
+                  {/* Spotify search results */}
+                  {spotifyToken && searchQuery && (
+                    <div className="mt-4">
+                      <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-green-400/60 px-2 mb-2">Spotify Results</p>
+                      {spotifySearchResults.length > 0 ? (
+                        <div className="space-y-1">
+                          {spotifySearchResults.map((track: SpotifyTrack) => (
+                            <button
+                              key={track.id}
+                              onClick={() => { playSpotifyTrack(track, audioRef); setShowLibrary(false); setSearchQuery(""); }}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-white/5 border border-transparent transition-all"
+                            >
+                              <img src={track.album.images[2]?.url ?? track.album.images[0]?.url ?? "/logo.png"} className="w-9 h-9 rounded-lg object-cover shrink-0" alt="" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate text-white/80">{track.name}</p>
+                                <p className="text-xs text-white/40 truncate">{track.artists.map((a: { name: string }) => a.name).join(", ")}</p>
+                              </div>
+                              <span className="text-[10px] text-green-400/60 font-semibold shrink-0">SPOTIFY</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-center text-white/25 text-xs py-4">No Spotify results</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -1125,9 +1215,101 @@ export default function MusicPlayer() {
                 )}
               </div>
             )}
+
+            {/* ── Tab: Spotify ────────────────────────────────────────────── */}
+            {libraryTab === "spotify" && (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {!spotifyToken ? (
+                  <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
+                    <Music2 className="w-12 h-12 text-green-400/30" />
+                    <p className="text-white/40 text-sm text-center">Connect Spotify to see your playlists</p>
+                    <button
+                      onClick={connectSpotify}
+                      className="px-6 py-3 rounded-2xl bg-green-500/20 border border-green-500/30 text-green-300 text-sm font-semibold hover:bg-green-500/30 transition-all hover:scale-105"
+                    >
+                      Connect Spotify
+                    </button>
+                  </div>
+                ) : isPremium === false ? (
+                  <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6">
+                    <p className="text-white/40 text-sm text-center">Spotify Premium required for playback</p>
+                    <p className="text-white/25 text-xs text-center">You can still browse playlists</p>
+                  </div>
+                ) : (
+                  <div className="flex-1 overflow-y-auto px-4 pb-8 hide-scrollbar">
+                    {spotifyTracks.length > 0 ? (
+                      <>
+                        <div className="flex items-center gap-2 px-2 mb-3">
+                          <button onClick={() => setSpotifyTracks([])} className="text-white/30 hover:text-white transition-colors">
+                            <X className="w-4 h-4" />
+                          </button>
+                          <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-white/30">{spotifyTracks.length} Tracks</p>
+                        </div>
+                        <div className="space-y-1">
+                          {spotifyTracks.map((track: SpotifyTrack) => (
+                            <button
+                              key={track.id}
+                              onClick={() => { playSpotifyTrack(track, audioRef); setShowLibrary(false); }}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-white/5 ${currentSpotifyTrack?.id === track.id ? "bg-green-500/10 border border-green-500/20" : "border border-transparent"}`}
+                            >
+                              <img src={track.album.images[2]?.url ?? track.album.images[0]?.url ?? "/logo.png"} className="w-9 h-9 rounded-lg object-cover shrink-0" alt="" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate text-white/80">{track.name}</p>
+                                <p className="text-xs text-white/40 truncate">{track.artists.map((a: { name: string }) => a.name).join(", ")}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-white/30 px-2 mb-3">Your Playlists</p>
+                        <div className="space-y-2">
+                          {spotifyPlaylists.map(pl => (
+                            <button
+                              key={pl.id}
+                              onClick={() => loadPlaylistTracks(pl.id)}
+                              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-white/3 border border-white/6 hover:bg-white/6 transition-all text-left"
+                            >
+                              {pl.images[0] ? (
+                                <img src={pl.images[0].url} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
+                                  <Music2 className="w-5 h-5 text-green-400" />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold truncate text-white/80">{pl.name}</p>
+                                <p className="text-xs text-white/35">{pl.tracks.total} tracks</p>
+                              </div>
+                            </button>
+                          ))}
+                          {spotifyPlaylists.length === 0 && (
+                            <p className="text-center text-white/25 text-sm py-12">No playlists found.</p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* ── Spotify error toast ──────────────────────────────────────────────── */}
+      {spotifyError && (
+        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-[200] bg-red-500/90 backdrop-blur-sm text-white text-sm px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 max-w-xs">
+          <span className="flex-1">{spotifyError}</span>
+          <button onClick={() => setSpotifyError(null)} className="text-white/70 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* ── Spotify Web Playback SDK ─────────────────────────────────────────── */}
+      <Script src="https://sdk.scdn.co/spotify-player.js" strategy="lazyOnload" />
     </div>
   );
 }
