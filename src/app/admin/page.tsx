@@ -145,7 +145,7 @@ export default function AdminPanel() {
   const fetchStats = useCallback(async () => {
     setLoadingStats(true);
     try {
-      const r = await fetch("/api/admin/stats");
+      const r = await fetch("/api/admin/songs");
       if (r.ok) setStats(await r.json());
     } catch { /**/ } finally { setLoadingStats(false); }
   }, []);
@@ -204,7 +204,7 @@ export default function AdminPanel() {
     if (!confirm(`Delete "${folderInfoMap[folder]?.title || folder}" and ALL its songs? This cannot be undone.`)) return;
     setDeletingFolder(folder);
     try {
-      const r = await fetch("/api/admin/folders/delete", {
+      const r = await fetch("/api/admin/folders", {
         method: "DELETE", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folder }),
       });
@@ -234,7 +234,7 @@ export default function AdminPanel() {
       fd.append("title", editTitle);
       fd.append("description", editDesc);
       if (editCoverFile) fd.append("cover", editCoverFile);
-      const r = await fetch("/api/admin/folders/update", { method: "POST", body: fd });
+      const r = await fetch("/api/admin/folders", { method: "PATCH", body: fd });
       const d = await r.json();
       if (d.success) { await fetchFolders(); setEditingFolder(null); notify("Playlist updated"); }
       else notify(d.error || "Failed to save", "error");
@@ -282,7 +282,7 @@ export default function AdminPanel() {
   const handleDeleteSong = async (filename: string) => {
     if (!confirm(`Delete "${cleanSongName(filename)}"?`)) return;
     try {
-      const r = await fetch("/api/admin/songs/delete", {
+      const r = await fetch("/api/admin/songs", {
         method: "DELETE", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folder: selectedFolder, filename }),
       });
@@ -307,8 +307,8 @@ export default function AdminPanel() {
     if (next === old) { setRenamingIdx(null); return; }
     setSavingRename(true);
     try {
-      const r = await fetch("/api/admin/songs/rename", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const r = await fetch("/api/admin/songs", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folder: selectedFolder, oldFilename: old, newFilename: next }),
       });
       const d = await r.json();
@@ -330,8 +330,8 @@ export default function AdminPanel() {
     setSongs(list);
     dragItemIdx.current = null; setDragOverIdx(null);
     try {
-      await fetch("/api/admin/songs/reorder", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      await fetch("/api/admin/songs", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folder: selectedFolder, songs: list }),
       });
       notify("Order saved");
