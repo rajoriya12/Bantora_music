@@ -9,8 +9,8 @@ export async function POST(request: NextRequest) {
     body: new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token,
-      client_id: process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID!,
-      client_secret: process.env.SPOTIFY_CLIENT_SECRET!,
+      client_id: process.env.SPOTIFYkey110!,
+      client_secret: process.env.soptifykey!,
     }),
   });
 
